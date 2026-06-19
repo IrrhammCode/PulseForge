@@ -17,7 +17,7 @@ import type { StudioProjectStatus } from "@/types/studio";
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { projects, ready, create, remove } = useStudioProjects();
+  const { projects, ready, create, remove, refresh } = useStudioProjects();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | StudioProjectStatus>("all");
@@ -283,7 +283,12 @@ export default function ProjectsPage() {
           {filteredProjects.length > 0 && (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} onDelete={handleDelete} />
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onDelete={handleDelete}
+                  onRefresh={refresh}
+                />
               ))}
             </div>
           )}
