@@ -31,6 +31,7 @@ export interface SystemCapabilities {
     elevenMusic: boolean;
     elevenStems: boolean;
     lalalStems: boolean;
+    musixmatchStems: boolean;
     richsyncTimeline: boolean;
     streamingIntel: boolean;
     concertIntel: boolean;
@@ -76,6 +77,7 @@ export function getSystemCapabilities(): SystemCapabilities {
       elevenMusic: partners.elevenlabs,
       elevenStems: partners.elevenlabs,
       lalalStems: partners.lalal,
+    musixmatchStems: partners.musixmatch,
       richsyncTimeline: partners.musixmatch,
       streamingIntel: partners.songstats,
       concertIntel: true,

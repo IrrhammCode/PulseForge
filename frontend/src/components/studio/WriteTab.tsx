@@ -24,6 +24,18 @@ import type { MusicArrangement, ProjectVersion, SongCreativeBrief } from "@/type
 import { primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
 import { SongConceptPanel } from "@/components/studio/SongConceptPanel";
 import { MusicArrangementPanel } from "@/components/studio/MusicArrangementPanel";
+import { applyConceptToLyrics } from "@pulseforge/shared/lib/studio/song-concept";
+import { composeLyricsBody } from "@/lib/studio/lyrics";
+import { buildCompositionPlan, buildFullSongPrompt } from "@pulseforge/shared/lib/studio/style-prompt";
+import { generateFullSong } from "@/lib/api-client";
+import { processGeneratedSong } from "@/lib/studio/audio-analysis";
+import { saveAudioBlob } from "@/lib/studio/audio-db";
+import {
+  separateStemsWithMusixmatch,
+  separateStemsWithElevenMusic,
+  separateStemsWithLalal,
+} from "@/lib/api-client";
+import { useRouter } from "next/navigation";
 import {
   buildExampleApplyPatch,
   cloneExampleLyrics,
@@ -48,6 +60,7 @@ const AUTOSAVE_MS = 800;
 
 export function WriteTab() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id as string;
   const { project, ready, refresh, saveLyrics, update, saveAudio, updateStems } =
     useStudioProject(projectId);
@@ -201,6 +214,58 @@ export function WriteTab() {
             <Plus className="h-3.5 w-3.5" />
             Analyze
           </Link>
+          {mxmCoach && (
+            <button
+              type="button"
+              onClick={async () => {
+                // Full Auto Fix + Generate + Open Produce
+                const moods = mxmCoach.moods || [];
+                const themes = mxmCoach.themes || [];
+                const briefPatch = {
+                  story: `Inspired by MXM: intense ${moods[0] || 'feeling'} and ${themes[0] || 'longing'}.`,
+                  emotionalArc: themes.length ? themes.join(' → ') + ' → release' : undefined,
+                  listenerMoment: `Raw ${moods[0] || 'emotion'} in the hook`,
+                  vocalCharacter: /heartbreak|angst/i.test(moods.join(' ')) ? 'Breathy intimate to powerful' : undefined,
+                };
+                const patches = { creativeBrief: { ...(activeVersion.creativeBrief || project.creativeBrief || {}), ...briefPatch }, moodTags: moods.length ? moods.slice(0,3) : project.moodTags, musicArrangement: { ...(project.musicArrangement || {}), stemEngine: 'musixmatch' as const } };
+                update(patches);
+                const updatedL = applyConceptToLyrics({ ...project, ...patches } as any, lyrics);
+                saveLyrics(activeVersion.id, updatedL);
+
+                // Langsung generate
+                try {
+                  const fullLyrics = composeLyricsBody(updatedL);
+                  const compPlan = buildCompositionPlan(updatedL, { ...project, ...patches }, mxmCoach);
+                  const prompt = buildFullSongPrompt({ ...project, ...patches }, fullLyrics, mxmCoach);
+                  const blob = await generateFullSong(prompt, { modelId: 'music_v2', compositionPlan: compPlan });
+                  const fileName = `${project.title || 'song'}-${activeVersion.label}.mp3`;
+                  const { meta, mixBlob } = await processGeneratedSong(blob, fileName);
+                  await saveAudioBlob(project.id, activeVersion.id, 'mix', mixBlob);
+                  await saveAudio(activeVersion.id, meta);
+                  // Auto stems
+                  const stemFile = new File([mixBlob], fileName, { type: meta.mimeType });
+                  const sRes = await separateStemsWithMusixmatch(stemFile).catch(() => null);
+                  if (sRes?.stems) {
+                    const mime = sRes.mimeType || meta.mimeType;
+                    for (const [id, b64] of Object.entries(sRes.stems)) {
+                      const bytes = new Uint8Array(atob(b64 as string).split('').map(c => c.charCodeAt(0)));
+                      await saveAudioBlob(project.id, activeVersion.id, id as any, new Blob([bytes], { type: mime }));
+                    }
+                    await updateStems(activeVersion.id, { stemsReady: true, stemSource: 'musixmatch' });
+                  }
+                  router.push(`/studio/${projectId}/produce`);
+                } catch (e) {
+                  console.error(e);
+                  alert('Auto Fix + Generate done (stems may need manual). Opened Produce.');
+                  router.push(`/studio/${projectId}/produce`);
+                }
+              }}
+              className="btn-secondary !px-3 !py-2 text-xs"
+              title="Auto-apply MXM moods/themes to brief + refresh lyrics (maximizes generate prompts)"
+            >
+              Auto Fix (MXM)
+            </button>
+          )}
         </div>
       </div>
 

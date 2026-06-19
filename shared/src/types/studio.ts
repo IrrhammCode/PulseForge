@@ -29,7 +29,7 @@ export interface StemMeta {
   solo: boolean;
 }
 
-export type StemSource = "client" | "lalal";
+export type StemSource = "client" | "lalal" | "musixmatch";
 
 export interface DemoAudioMeta {
   fileName: string;
@@ -151,7 +151,7 @@ export interface MusicArrangement {
     Record<"intro" | "verse1" | "chorus" | "verse2" | "bridge" | "outro", SectionMusicDirection>
   >;
   /** Post-generate stem separation: auto tries Eleven then LALAL */
-  stemEngine?: "auto" | "eleven" | "lalal";
+  stemEngine?: "auto" | "eleven" | "lalal" | "musixmatch";
 }
 
 export interface StudioProject {

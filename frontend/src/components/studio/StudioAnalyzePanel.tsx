@@ -23,13 +23,26 @@ import { StaleAnalysisAlert } from "@/components/studio/StaleAnalysisAlert";
 import { StudioStaleViralBanner } from "@/components/studio/StudioStaleViralBanner";
 import { buildCreativeGraph } from "@/lib/domain/creative-graph";
 import { ViralLabCTA } from "@/components/viral/ViralLabCTA";
+import { applyConceptToLyrics, buildAutoFixPatches } from "@pulseforge/shared/lib/studio/song-concept";
+import { primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
+import { buildCompositionPlan, buildFullSongPrompt } from "@pulseforge/shared/lib/studio/style-prompt";
+import { generateFullSong } from "@/lib/api-client";
 
 interface StudioAnalyzePanelProps {
   project: StudioProject;
   onAnalysisSaved?: (analysis: TrackAnalysis) => void;
+  onUpdateProject?: (patch: any) => void;
+  onSaveLyrics?: (lyrics: any) => void;
+  onSaveAudio?: (audio: any) => void;
+  onUpdateStems?: (patch: any) => void;
+  saveFullSong?: (blob: Blob) => Promise<void>;
+  saveFullSongAndOpenProduce?: (blob: Blob) => Promise<void>;
 }
 
-export function StudioAnalyzePanel({ project, onAnalysisSaved }: StudioAnalyzePanelProps) {
+export function StudioAnalyzePanel({ 
+  project, onAnalysisSaved, onUpdateProject, onSaveLyrics, onSaveAudio, onUpdateStems, 
+  saveFullSong, saveFullSongAndOpenProduce 
+}: StudioAnalyzePanelProps) {
   const activeVersion = project.versions.find((v) => v.id === project.activeVersionId);
   const [analysis, setAnalysis] = useState<TrackAnalysis | null>(
     activeVersion?.analysis ?? null
@@ -76,6 +89,46 @@ export function StudioAnalyzePanel({ project, onAnalysisSaved }: StudioAnalyzePa
       setProgressStep(3);
     }
   }, [activeVersion, project, onAnalysisSaved]);
+
+  const handleAutoFixAndGenerate = useCallback(async () => {
+    if (!activeVersion || !analysis) return;
+
+    // Use helper for patches
+    const patches = buildAutoFixPatches(analysis.meta?.mxmCoach, project, analysis);
+
+    // Apply fixes
+    if (onUpdateProject) onUpdateProject(patches);
+    if (onSaveLyrics && activeVersion.lyrics) {
+      const p = { ...project, ...patches };
+      onSaveLyrics(applyConceptToLyrics(p as any, activeVersion.lyrics));
+    }
+    if (onAnalysisSaved) onAnalysisSaved({ ...analysis, meta: { ...analysis.meta, mxmCoach: analysis.meta?.mxmCoach || {} } });
+
+    // Langsung generate
+    try {
+      const lyricsForGen = activeVersion.lyrics;
+      const fullLyrics = composeLyricsBody(lyricsForGen);
+      const coach = analysis.meta?.mxmCoach || {};
+      const compPlan = buildCompositionPlan(lyricsForGen, { ...project, ...patches }, coach);
+      const prompt = buildFullSongPrompt({ ...project, ...patches }, fullLyrics, coach);
+
+      const blob = await generateFullSong(prompt, { modelId: "music_v2", compositionPlan: compPlan });
+
+      if (saveFullSong) await saveFullSong(blob);
+      else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${project.title || "song"}.mp3`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      if (onUpdateStems) onUpdateStems({ stemSource: "musixmatch" });
+      alert("✅ Auto Fix + Generate done!");
+    } catch (e: any) {
+      alert("Fix done, generate failed: " + (e.message || e));
+    }
+  }, [analysis, activeVersion, project, onUpdateProject, onSaveLyrics, onAnalysisSaved, saveFullSong, onUpdateStems]);
 
   return (
     <div className="space-y-6">
@@ -133,6 +186,27 @@ export function StudioAnalyzePanel({ project, onAnalysisSaved }: StudioAnalyzePa
                 </>
               )}
             </button>
+            {analysis && !isAnalyzing && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleAutoFixAndGenerate}
+                  className="btn-primary bg-green-600 hover:bg-green-700"
+                  title="Auto Fix + Generate"
+                >
+                  🚀 Auto Fix + Generate
+                </button>
+                {saveFullSongAndOpenProduce && (
+                  <button
+                    type="button"
+                    onClick={handleAutoFixAndGenerateAndOpen}
+                    className="btn-primary bg-purple-600 hover:bg-purple-700"
+                  >
+                    Auto Fix + Generate + Open Produce
+                  </button>
+                )}
+              </>
+            )}
             {analyzedAt && (
               <span className="text-xs text-muted">
                 Last run {new Date(analyzedAt).toLocaleString()}

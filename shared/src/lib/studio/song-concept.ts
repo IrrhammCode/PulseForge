@@ -1,4 +1,5 @@
 import type { LyricsSections, SongCreativeBrief, StudioProject } from "@/types/studio";
+import type { MxmCoachContext } from "@/types";
 import { resolveGenreLabels, resolveMoodLabels } from "@/types/studio";
 
 export const CONCEPT_FIELD_HINTS: {
@@ -155,6 +156,40 @@ export function applyConceptToLyrics(
     bridge: fill(existing.bridge, starter.bridge),
     outro: fill(existing.outro, starter.outro),
     raw: existing.raw,
+  };
+}
+
+/**
+ * One-click Auto Fix helper: builds rich updates from MXM coach + optional full analysis.
+ * Maximizes integration: brief, lyrics, tags, arrangement hints.
+ */
+export function buildAutoFixPatches(
+  mxmCoach: MxmCoachContext | undefined,
+  currentProject: any,
+  analysis?: any
+) {
+  const moods: string[] = mxmCoach?.moods || (analysis?.meta?.mxmCoach?.moods || []);
+  const themes: string[] = mxmCoach?.themes || (analysis?.meta?.mxmCoach?.themes || []);
+
+  const moodPatch = moods.length > 0 ? moods.slice(0, 3) : currentProject.moodTags;
+
+  const meaning = analysis?.meaning?.explanation || analysis?.lyrics?.analysis || 
+    `Captured ${moods[0] || 'raw'} emotions with themes of ${themes[0] || 'longing'}.`;
+
+  const briefPatch = {
+    story: meaning.slice(0, 320),
+    emotionalArc: themes.length ? ` ${themes.slice(0,2).join(' → ')} → ${moods[0] || 'release'}` : undefined,
+    listenerMoment: `The ${moods[0] || 'feeling'} lands hard.`,
+    vocalCharacter: /heartbreak|angst|vulner/i.test(moods.join(' ')) ? 'Intimate breathy to powerful' : undefined,
+  };
+
+  return {
+    moodTags: moodPatch,
+    creativeBrief: { ...(currentProject.creativeBrief || {}), ...briefPatch },
+    musicArrangement: {
+      ...(currentProject.musicArrangement || {}),
+      stemEngine: 'musixmatch' as const,
+    },
   };
 }
 

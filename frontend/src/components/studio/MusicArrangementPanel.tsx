@@ -228,7 +228,8 @@ export function MusicArrangementPanel({ arrangement, onChange }: MusicArrangemen
             }
             className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
           >
-            <option value="auto">Auto — Eleven stems, fallback LALAL</option>
+            <option value="auto">Auto (prefer Musixmatch stems)</option>
+            <option value="musixmatch">Musixmatch Pro stems</option>
             <option value="eleven">ElevenLabs Music stems</option>
             <option value="lalal">LALAL.AI multistem</option>
           </select>

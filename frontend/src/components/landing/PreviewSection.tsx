@@ -25,32 +25,39 @@ export function PreviewSection() {
       title={
         <>
           One dashboard.{" "}
-          <span className="text-accent">Complete clarity.</span>
+          <span className="gradient-text">Complete clarity.</span>
         </>
       }
       description="A single source of truth before you ship — no scattered tools."
     >
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface-elevated">
+      <div className="glass-card-hover overflow-hidden rounded-2xl shadow-2xl shadow-accent/5">
         <div className="grid lg:grid-cols-2">
-          <div className="flex flex-col justify-center border-b border-border p-6 md:p-8 lg:border-b-0 lg:border-r">
+          {/* Left: Checklist */}
+          <div className="flex flex-col justify-center border-b border-border/40 p-6 md:p-8 lg:border-b-0 lg:border-r lg:border-border/40">
             <ul className="space-y-3">
-              {REPORT_ITEMS.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-sm">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" />
+              {REPORT_ITEMS.map((item, i) => (
+                <li key={item} className="flex items-start gap-3 text-sm animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+                  <span className="mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent-light">
+                    ✓
+                  </span>
                   <span className="leading-relaxed text-muted">{item}</span>
                 </li>
               ))}
             </ul>
-            <WelcomeLink href="/studio" className="btn-primary mt-8 w-fit">
+            <WelcomeLink href="/studio" className="btn-primary mt-8 w-fit group">
               Open the studio
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </WelcomeLink>
           </div>
 
+          {/* Right: Mini dashboard preview */}
           <div className="space-y-3 p-5 md:p-6">
-            <div className="rounded-xl border border-border bg-background p-4">
+            {/* Track card */}
+            <div className="glass-card rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-lg bg-accent" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-blue-500 text-white font-bold text-sm">
+                  MD
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">Midnight Drive</p>
                   <p className="truncate text-xs text-muted">Nova Ray · Indie Pop</p>
@@ -62,8 +69,9 @@ export function PreviewSection() {
               </div>
             </div>
 
+            {/* Growth + Energy cards */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-border bg-background p-4">
+              <div className="glass-card rounded-xl p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted">
                   Growth
                 </p>
@@ -71,22 +79,22 @@ export function PreviewSection() {
                   {[35, 48, 42, 60, 55, 72, 68, 85].map((h, i) => (
                     <div
                       key={i}
-                      className="flex-1 rounded-sm bg-accent/60"
-                      style={{ height: `${h}%` }}
+                      className="flex-1 rounded-sm bg-gradient-to-t from-accent/40 to-accent/80 transition-all duration-300 hover:from-accent/60 hover:to-accent"
+                      style={{ height: `${h}%`, animation: "barGrow 0.8s ease-out both", animationDelay: `${i * 80}ms` }}
                     />
                   ))}
                 </div>
               </div>
-              <div className="rounded-xl border border-border bg-background p-4">
+              <div className="glass-card rounded-xl p-4">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted">
                   Energy
                 </p>
                 <div className="mt-3 space-y-2">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-border">
-                    <div className="bar-accent" style={{ width: "78%" }} />
+                  <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
+                    <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500" style={{ width: "78%", animation: "barGrow 1s ease-out both" }} />
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-border">
-                    <div className="bar-accent" style={{ width: "62%" }} />
+                  <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
+                    <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" style={{ width: "62%", animation: "barGrow 1s ease-out 0.2s both" }} />
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-1.5">
@@ -96,7 +104,8 @@ export function PreviewSection() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-accent-muted p-4">
+            {/* Hook line */}
+            <div className="glass-card overflow-hidden rounded-xl border-accent/10 bg-accent/5 p-4">
               <p className="text-[10px] font-medium uppercase tracking-wider text-accent-light">
                 Hook line
               </p>
@@ -109,12 +118,15 @@ export function PreviewSection() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3">
+            {/* Streaming velocity */}
+            <div className="glass-card flex items-center justify-between rounded-xl px-4 py-3">
               <div className="flex items-center gap-2">
                 <SongstatsLogo size={18} />
                 <span className="text-xs text-muted">Streaming velocity</span>
               </div>
-              <span className="text-sm font-bold tabular-nums text-accent-light">+24</span>
+              <span className="rounded-full bg-success/10 px-2 py-0.5 text-sm font-bold tabular-nums text-success">
+                +24
+              </span>
             </div>
           </div>
         </div>

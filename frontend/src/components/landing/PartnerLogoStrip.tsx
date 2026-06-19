@@ -24,13 +24,13 @@ export function PartnerLogoStrip() {
       <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted">
         Integrated partners
       </p>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap gap-2">
         {PARTNERS.map(({ name, Logo, tag }) => (
           <div
             key={name}
-            className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-elevated px-3 py-2.5"
+            className="glass-card-hover flex items-center gap-2.5 rounded-xl px-3 py-2.5"
           >
-            <Logo size={24} />
+            <Logo size={22} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{name}</p>
               <p className="text-[10px] uppercase tracking-wider text-muted">{tag}</p>

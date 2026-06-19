@@ -20,6 +20,7 @@ import {
   deleteClipAudio,
 } from "@/lib/studio/audio-db";
 import { listElevenLabsVoices, synthesizeHookVoice, generateFullSong, ApiError, type ElevenLabsVoice, fetchRichsync } from "@/lib/api-client";
+import { MusixmatchProTools } from "@/components/studio/MusixmatchProTools";
 import type { DemoAudioMeta, LyricsSections } from "@/types/studio";
 import { formatFileSize, extractWaveformPeaks } from "@/lib/studio/audio-analysis";
 import { StudioFocusHint } from "@/components/studio/StudioFocusHint";
@@ -1445,6 +1446,23 @@ export function ProduceTab() {
           <div id="focus-bpm" className="transition-shadow">
             <WaveformWorkspace audio={activeVersion.audio} src={mixUrl} />
           </div>
+
+          {/* Musixmatch Pro tools also available in Produce for the full mix */}
+          <MusixmatchProTools
+            project={project}
+            versionId={activeVersion.id}
+            lyrics={activeVersion.lyrics}
+            audioUrl={mixUrl}
+            onApplyEnrichment={(data) => {
+              console.log('[MXM Enrich applied in Produce]', data);
+              alert(`MXM analysis applied to this version!\nMoods: ${data.moods?.join(', ') || '—'}\n\nGreat for viral/launch planning.`);
+            }}
+          />
+
+          {/* Auto-apply benefit from Analyze → Auto Fix */}
+          {activeVersion.analysis?.meta?.mxmCoach && (
+            <div className="text-[10px] text-muted px-2">MXM coach active in NLE styles &amp; section editing (from Auto Fix)</div>
+          )}
 
           <div className="flex flex-wrap gap-4 text-xs text-muted">
             <span>{formatFileSize(activeVersion.audio.sizeBytes)}</span>

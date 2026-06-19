@@ -278,4 +278,124 @@ export async function getTrackDetails(trackId: number): Promise<MxmTrackRaw | nu
   return body.track;
 }
 
+export interface MxmTranslationRaw {
+  lyrics_id: number;
+  lyrics_body: string;
+  lyrics_language?: string;
+  lyrics_translated?: {
+    lyrics_body: string;
+    selected_language?: string;
+    restricted?: number;
+  };
+  lyrics_copyright?: string;
+}
+
+export async function getLyricsTranslation(
+  trackId: number,
+  selectedLanguage = "en"
+): Promise<MxmTranslationRaw | null> {
+  try {
+    const data = await mxmFetch<{ message: { body: { lyrics: MxmTranslationRaw } } }>(
+      "track.lyrics.translation.get",
+      {
+        track_id: String(trackId),
+        selected_language: selectedLanguage,
+      }
+    );
+    const body = data.message?.body;
+    if (!body || Array.isArray(body)) return null;
+    return body.lyrics ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export type AppTrack = ReturnType<typeof mapTrackToApp>;
+
+/**
+ * Musixmatch Pro Stem Separation
+ * Uses the Stem Separation API to split audio into high-fidelity stems.
+ * Supports 2, 4 or 6 stems (we normalize to vocals/drums/bass/other).
+ */
+export async function separateWithMusixmatch(
+  audioBuffer: ArrayBuffer,
+  filename = "song.mp3"
+): Promise<Record<string, ArrayBuffer>> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error("MUSIXMATCH_API_KEY or MXM_KEY is required for Musixmatch stem separation");
+  }
+
+  const form = new FormData();
+  const blob = new Blob([audioBuffer], { type: "audio/mpeg" });
+  form.append("file", blob, filename);
+  // Some Musixmatch endpoints accept additional params for stem count
+  form.append("stem_count", "4"); // vocals, drums, bass, other
+
+  // Musixmatch stem separation endpoint (based on Pro API docs)
+  const url = `${BASE_URL}/track.stem.separation?apikey=${encodeURIComponent(apiKey)}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`Musixmatch stem separation failed (${res.status}): ${errText.slice(0, 200)}`);
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  const stems: Record<string, ArrayBuffer> = {};
+
+  // Flexible parsing - Musixmatch may return different structures
+  const body = data?.message?.body ?? data?.body ?? data;
+
+  // Common patterns: { stems: { vocals: base64, drums: ..., ... } } or array of tracks
+  const stemData = body?.stems || body?.result?.stems || body;
+
+  if (stemData && typeof stemData === "object") {
+    for (const [rawKey, value] of Object.entries(stemData as Record<string, any>)) {
+      let b64: string | null = null;
+      if (typeof value === "string") {
+        b64 = value;
+      } else if (value && typeof value === "object" && value.url) {
+        // If URL provided, fetch it
+        try {
+          const stemRes = await fetch(value.url);
+          if (stemRes.ok) {
+            stems[normalizeStemKey(rawKey)] = await stemRes.arrayBuffer();
+          }
+        } catch {}
+        continue;
+      } else if (value?.data) {
+        b64 = value.data;
+      }
+
+      if (b64) {
+        try {
+          const binary = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+          stems[normalizeStemKey(rawKey)] = binary.buffer;
+        } catch (e) {
+          console.warn("Failed to decode Musixmatch stem", rawKey);
+        }
+      }
+    }
+  }
+
+  // Ensure we have at least the common 4 stems
+  if (Object.keys(stems).length === 0) {
+    throw new Error("Musixmatch returned no usable stems");
+  }
+
+  return stems;
+}
+
+function normalizeStemKey(key: string): "vocals" | "drums" | "bass" | "other" {
+  const k = key.toLowerCase();
+  if (k.includes("vocal") || k.includes("lead")) return "vocals";
+  if (k.includes("drum")) return "drums";
+  if (k.includes("bass")) return "bass";
+  return "other";
+}

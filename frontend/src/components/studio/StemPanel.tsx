@@ -74,7 +74,7 @@ export function StemPanel({
         setStemStep(step);
       });
 
-      onStemsUpdated({ stemsReady: true, stems, stemSource: "client" });
+      onStemsUpdated({ stemsReady: true, stems, stemSource: "client" }); // or "musixmatch"
     } finally {
       setSeparating(false);
     }
@@ -107,7 +107,7 @@ export function StemPanel({
       onStemsUpdated({
         stemsReady: true,
         stems: audio.stems,
-        stemSource: "lalal",
+        stemSource: "lalal", // could be "musixmatch"
       });
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "LALAL.AI separation failed";
@@ -241,7 +241,7 @@ export function StemPanel({
                       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                       await saveAudioBlob(projectId, versionId, stemId, new Blob([bytes], { type: mime }));
                     }
-                    onStemsUpdated({ stemsReady: true, stems: audio.stems, stemSource: "lalal" });
+                    onStemsUpdated({ stemsReady: true, stems: audio.stems, stemSource: "lalal" }); // "musixmatch" when using MXM stems
                   } catch (err) {
                     const msg = err instanceof ApiError ? err.message : "Eleven Music stems failed";
                     setError(msg);

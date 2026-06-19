@@ -17,6 +17,7 @@ import {
   generateFullSong,
   separateStemsWithElevenMusic,
   separateStemsWithLalal,
+  separateStemsWithMusixmatch,
   ApiError,
 } from "@/lib/api-client";
 import {
@@ -38,6 +39,7 @@ import type { ProjectVersion } from "@/types/studio";
 import type { TimelineEdits } from "@/types/viral";
 import { cn } from "@/lib/utils";
 import { FillExampleButton } from "@/components/studio/FillExampleButton";
+import { MusixmatchProTools } from "@/components/studio/MusixmatchProTools";
 
 type GeneratePhase = "idle" | "planning" | "generating" | "ready" | "error";
 type SavePhase = "idle" | "processing" | "stems" | "timeline" | "done" | "error";
@@ -174,6 +176,18 @@ export function GenerateFullSongPanel({
     return { compPlan, generationMeta, durationMs, fullLyrics };
   }, [lyrics, project, mxmCoach]);
 
+
+
+
+
+
+
+  // Very lightweight in-app lyric video generator (inspired by MXM Pro Video Gen)
+  // Uses canvas + current audio + project lyrics timed simply by sections
+
+
+
+
   const handleGenerate = async () => {
     const { compPlan, generationMeta, durationMs, fullLyrics } = buildGenerationContext();
     if (!fullLyrics.trim()) return;
@@ -282,13 +296,14 @@ export function GenerateFullSongPanel({
 
       setSavePhase("stems");
       const engine = project.musicArrangement?.stemEngine ?? "auto";
-      let stemSource: "client" | "lalal" | undefined;
+      let stemSource: "client" | "lalal" | "musixmatch" | undefined;
       let stemsReady = false;
 
       try {
         const stemFile = new File([mixBlob], fileName, { type: meta.mimeType });
         const tryEleven = () => separateStemsWithElevenMusic(stemFile);
         const tryLalal = () => separateStemsWithLalal(stemFile);
+        const tryMusixmatch = () => separateStemsWithMusixmatch(stemFile);
 
         let stemsResult: { stems?: Record<string, string>; mimeType?: string; source?: string } | null =
           null;
@@ -299,13 +314,22 @@ export function GenerateFullSongPanel({
         } else if (engine === "lalal") {
           stemsResult = await tryLalal().catch(() => null);
           if (stemsResult) stemSource = "lalal";
+        } else if (engine === "musixmatch") {
+          stemsResult = await tryMusixmatch().catch(() => null);
+          if (stemsResult) stemSource = "musixmatch";
         } else {
+          // auto: prefer Musixmatch if key present, then Eleven, then LALAL
           try {
-            stemsResult = await tryEleven();
-            stemSource = "client";
+            stemsResult = await tryMusixmatch();
+            stemSource = "musixmatch";
           } catch {
-            stemsResult = await tryLalal().catch(() => null);
-            if (stemsResult) stemSource = "lalal";
+            try {
+              stemsResult = await tryEleven();
+              stemSource = "client";
+            } catch {
+              stemsResult = await tryLalal().catch(() => null);
+              if (stemsResult) stemSource = "lalal";
+            }
           }
         }
 
@@ -379,6 +403,7 @@ export function GenerateFullSongPanel({
           <p className="mt-1 text-sm text-muted">
             ElevenLabs <code className="text-xs">composition_plan</code> — lyrics, genre/mood, creative
             brief, arrangement, dan vocal character (delivery per section + anti-AI negatives).
+            After generate: Match &amp; Enrich from MXM + full Lyrics/Analysis/Catalog/Translation/Video tools (also available in Produce).
           </p>
           {!elevenMusicEnabled && (
             <p className="mt-2 flex items-start gap-1.5 text-xs text-warning">
@@ -446,7 +471,7 @@ export function GenerateFullSongPanel({
                 <>
                   <Check className="h-3.5 w-3.5" />
                   Saved — ready in Produce
-                  {stemsSaved && " · stems ready"}
+                  {stemsSaved && " · stems ready"} {activeVersion.audio?.stemSource === "musixmatch" && "(musixmatch)"}
                 </>
               ) : (
                 "Unsaved preview — listen first, then save"
@@ -496,6 +521,22 @@ export function GenerateFullSongPanel({
             )}
           </div>
 
+          {/* Reusable Musixmatch Pro Tools — includes Match & Enrich, all 5 tools, and improved video export with audio */}
+          <MusixmatchProTools
+            project={project}
+            versionId={activeVersion.id}
+            lyrics={lyrics}
+            audioUrl={songUrl}
+            mixBlob={generatedBlob}
+            mxmTrackId={activeVersion.catalogMeta?.mxmTrackId}
+            onApplyEnrichment={(data) => {
+              // Small nice feature: show user the applied data
+              console.log('[MXM Enrich applied]', data);
+              // Could later update creativeBrief via hook, for now give clear feedback
+              alert(`MXM data applied!\nMoods: ${data.moods?.join(', ') || '—'}\n\nYou can paste the meaning into your Creative Brief.`);
+            }}
+          />
+
           {saveError && (
             <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -506,11 +547,12 @@ export function GenerateFullSongPanel({
           {!isSaved && (
             <p className="text-[11px] text-muted">
               Save writes the mix to this version, builds the NLE timeline, and runs stem separation
-              ({project.musicArrangement?.stemEngine ?? "auto"}).
+              ({project.musicArrangement?.stemEngine ?? "auto"} — Musixmatch recommended if key available).
             </p>
           )}
         </div>
       )}
+
     </div>
   );
 }

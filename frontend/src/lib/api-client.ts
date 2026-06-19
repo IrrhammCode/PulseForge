@@ -26,6 +26,30 @@ export async function fetchRichsync(trackId: number): Promise<{
   return data;
 }
 
+export async function fetchLyrics(trackId: number): Promise<any> {
+  const res = await fetch(`/api/catalog/lyrics/${trackId}`);
+  if (res.status === 404 || res.status === 503) return null;
+  const data = await res.json();
+  if (!res.ok) throw new ApiError(data.error ?? "Lyrics fetch failed", res.status);
+  return data;
+}
+
+export async function fetchLyricsAnalysis(trackId: number): Promise<any> {
+  const res = await fetch(`/api/catalog/analysis/${trackId}`);
+  if (res.status === 503) return null;
+  const data = await res.json();
+  if (!res.ok) throw new ApiError(data.error ?? "Analysis fetch failed", res.status);
+  return data;
+}
+
+export async function fetchLyricsTranslation(trackId: number, lang = "en"): Promise<any> {
+  const res = await fetch(`/api/catalog/translation?track_id=${trackId}&lang=${encodeURIComponent(lang)}`);
+  if (res.status === 404 || res.status === 503) return null;
+  const data = await res.json();
+  if (!res.ok) throw new ApiError(data.error ?? "Translation fetch failed", res.status);
+  return data;
+}
+
 export async function searchTracks(query: string): Promise<AppTrack[]> {
   const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();
@@ -235,6 +259,21 @@ export async function separateStemsWithElevenMusic(file: File): Promise<{
   const data = await res.json();
   if (!res.ok) {
     throw new ApiError(data.error ?? "ElevenLabs Music stems failed", res.status);
+  }
+  return data;
+}
+
+export async function separateStemsWithMusixmatch(file: File): Promise<{
+  source: string;
+  stems: Record<string, string>;
+  mimeType: string;
+}> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/studio/stems/musixmatch", { method: "POST", body: form });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new ApiError(data.error ?? "Musixmatch stems failed", res.status);
   }
   return data;
 }

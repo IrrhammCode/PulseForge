@@ -4,9 +4,13 @@ import { getSystemCapabilities } from "@pulseforge/shared/lib/partners/capabilit
 import {
   getTrackDetails,
   getRichsync,
+  getTrackLyrics,
+  getLyricsAnalysis,
+  getLyricsTranslation,
   hasMusixmatchKey,
   mapTrackToApp,
   searchTracks,
+  separateWithMusixmatch,
 } from "@pulseforge/shared/lib/musixmatch/client";
 import { parseRichsyncBody } from "@pulseforge/shared/lib/musixmatch/richsync-parser";
 import { mockTracksToApp, searchMockTracks } from "@pulseforge/shared/lib/partners/mock-catalog";
@@ -150,6 +154,69 @@ apiRouter.get("/catalog/richsync/:id", async (req, res) => {
     res.json({ richsync: parsed, source: "musixmatch" });
   } catch (err) {
     res.status(502).json({ error: err instanceof Error ? err.message : "Richsync fetch failed" });
+  }
+});
+
+apiRouter.get("/catalog/lyrics/:id", async (req, res) => {
+  const trackId = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(trackId)) {
+    res.status(400).json({ error: "Invalid track id" });
+    return;
+  }
+  if (!hasMusixmatchKey()) {
+    res.status(503).json({ error: "Musixmatch API key not configured", demoMode: true });
+    return;
+  }
+  try {
+    const lyrics = await getTrackLyrics(trackId);
+    if (!lyrics) {
+      res.status(404).json({ error: "Lyrics not found" });
+      return;
+    }
+    res.json({ lyrics, source: "musixmatch" });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Lyrics fetch failed" });
+  }
+});
+
+apiRouter.get("/catalog/analysis/:id", async (req, res) => {
+  const trackId = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(trackId)) {
+    res.status(400).json({ error: "Invalid track id" });
+    return;
+  }
+  if (!hasMusixmatchKey()) {
+    res.status(503).json({ error: "Musixmatch API key not configured", demoMode: true });
+    return;
+  }
+  try {
+    const analysis = await getLyricsAnalysis(trackId);
+    res.json({ analysis, source: "musixmatch" });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Analysis fetch failed" });
+  }
+});
+
+apiRouter.get("/catalog/translation", async (req, res) => {
+  const trackId = parseInt(String(req.query.track_id ?? ""), 10);
+  const lang = String(req.query.lang ?? "en").slice(0, 5);
+  if (!Number.isFinite(trackId)) {
+    res.status(400).json({ error: "track_id query param required" });
+    return;
+  }
+  if (!hasMusixmatchKey()) {
+    res.status(503).json({ error: "Musixmatch API key not configured", demoMode: true });
+    return;
+  }
+  try {
+    const translation = await getLyricsTranslation(trackId, lang);
+    if (!translation) {
+      res.status(404).json({ error: "Translation not available" });
+      return;
+    }
+    res.json({ translation, source: "musixmatch", language: lang });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Translation fetch failed" });
   }
 });
 
@@ -507,6 +574,42 @@ apiRouter.post("/studio/stems/lalal", upload.single("file"), async (req, res) =>
     res.json({ source: "lalal", stems, mimeType: "audio/mpeg" });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : "LALAL.AI separation failed" });
+  }
+});
+
+// Musixmatch Pro Stem Separation
+apiRouter.post("/studio/stems/musixmatch", upload.single("file"), async (req, res) => {
+  try {
+    if (!hasMusixmatchKey()) {
+      res.status(503).json({ error: "MUSIXMATCH_API_KEY / MXM_KEY is not configured" });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "Audio file is required" });
+      return;
+    }
+    const fileBuf = req.file.buffer;
+    const arrayBuffer = fileBuf.buffer.slice(
+      fileBuf.byteOffset,
+      fileBuf.byteOffset + fileBuf.byteLength
+    ) as ArrayBuffer;
+
+    const stemsBuf = await separateWithMusixmatch(arrayBuffer, req.file.originalname);
+
+    const stems: Record<string, string> = {};
+    for (const id of ["vocals", "drums", "bass", "other"] as const) {
+      const data = stemsBuf[id];
+      if (data) stems[id] = Buffer.from(data).toString("base64");
+    }
+
+    if (!Object.keys(stems).length) {
+      res.status(502).json({ error: "No stems returned from Musixmatch" });
+      return;
+    }
+
+    res.json({ source: "musixmatch", stems, mimeType: "audio/mpeg" });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Musixmatch stem separation failed" });
   }
 });
 
