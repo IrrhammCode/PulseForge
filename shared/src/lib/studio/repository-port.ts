@@ -11,7 +11,20 @@ import type { TimelineEdits, ViralSnapshot } from "@/types/viral";
 export type UpdateProjectPatch = Partial<
   Pick<
     StudioProject,
-    "title" | "artistName" | "genre" | "mood" | "bpmTarget" | "status" | "activeVersionId" | "versions"
+    | "title"
+    | "artistName"
+    | "genre"
+    | "mood"
+    | "genreTags"
+    | "moodTags"
+    | "genreCustom"
+    | "moodCustom"
+    | "creativeBrief"
+    | "musicArrangement"
+    | "bpmTarget"
+    | "status"
+    | "activeVersionId"
+    | "versions"
   >
 >;
 

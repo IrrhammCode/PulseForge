@@ -29,20 +29,24 @@ npm run dev:fresh
 
 ### Backend (`backend/.env`)
 
-| Variable | Purpose |
-|----------|---------|
-| `DATABASE_URL` | SQLite path (default `file:./data/pulseforge.db`) |
-| `PORT` | API port (default `4000`) |
-| `PULSEFORGE_API_SECRET` | Optional — require `X-PulseForge-Key` on `/api/*` (not `/api/cloud/*`) |
-| `PULSEFORGE_SYNC_TOKEN` | Bootstrap admin bearer (full cloud access) |
-| `MUSIXMATCH_API_KEY` | Quick Analyze search + lyrics |
-| `CYANITE_ACCESS_TOKEN` | Audio AI for released Spotify tracks |
-| `CYANITE_WEBHOOK_SECRET` | (optional) Verify signatures from Cyanite webhook callbacks |
-| `SONGSTATS_API_KEY` | Streaming velocity signals |
-| `ELEVENLABS_API_KEY` | Hook voice preview (Write tab) |
-| `LALAL_API_KEY` | AI stem separation (Produce tab) |
-| `JAMBASE_API_KEY` | Concert listings (Launch tab) |
-| `N8N_WEBHOOK_URL` | Release automation webhook (Launch tab) |
+| Variable | Partner | What it unlocks |
+|----------|---------|-----------------|
+| `DATABASE_URL` | — | SQLite path (default `file:./data/pulseforge.db`) |
+| `PORT` | — | API port (default `4000`) |
+| `PULSEFORGE_API_SECRET` | — | Optional `X-PulseForge-Key` on `/api/*` |
+| `PULSEFORGE_SYNC_TOKEN` | — | Cloud sync bootstrap admin token |
+| `MUSIXMATCH_API_KEY` / `MXM_KEY` | Musixmatch | Catalog search, lyrics, moods/themes, richsync, similar tracks |
+| `CYANITE_ACCESS_TOKEN` | Cyanite | Spotify audio AI — BPM, energy curve, mood/genre tags |
+| `CYANITE_WEBHOOK_SECRET` | Cyanite | (optional) Async analysis webhook verification |
+| `SONGSTATS_API_KEY` | Songstats | Streams, TikTok/Shazam, velocity, artist momentum |
+| `ELEVENLABS_API_KEY` | ElevenLabs | Full song (Music API), hook TTS, voice clone, music stems |
+| `ELEVENLABS_VOICE_ID` | ElevenLabs | (optional) Default TTS voice |
+| `LALAL_API_KEY` | LALAL.AI | AI stem separation in Produce |
+| `JAMBASE_API_KEY` | JamBase | Live concert listings on Launch (demo without key) |
+| `N8N_WEBHOOK_URL` | n8n | Release automation — rich payload with partner context |
+| `TREND_FEED_URL` | — | (optional) External trend keywords for lyric scoring |
+
+Without partner keys, **Quick Analyze** uses demo tracks; **Studio** still runs local scoring + optional ElevenLabs/LALAL if configured independently.
 
 ### Frontend (`frontend/.env.local`, optional)
 
@@ -87,8 +91,19 @@ Services (Scoring, Partner Adapters, Viral Lab, NLE timeline)
 | Tier | Signals |
 |------|---------|
 | **Local** | Lyrics structure, genre/mood heuristics, client BPM & waveform |
-| **Partner** | Musixmatch catalog + optional Cyanite/Songstats |
-| **Full** | All partners on catalog tracks |
+| **Partner** | Any Musicathon API key configured |
+| **Full** | Musixmatch + (Cyanite or Songstats) on catalog tracks |
+
+### Partner data flow
+
+| Tab | Musixmatch | Cyanite | Songstats | ElevenLabs | LALAL | JamBase | n8n |
+|-----|------------|---------|-----------|------------|-------|---------|-----|
+| Quick Analyze | Search, lyrics, benchmark | Energy panel | Streaming + momentum | — | — | — | — |
+| Studio Write | Coach, richsync | — | — | Full song, TTS | Auto-stems | — | — |
+| Studio Produce | Richsync sync | — | — | Section regen | Stems | — | — |
+| Studio Analyze | Lyrics intel | Energy | Streaming + similar tracks | — | — | — | — |
+| Studio Launch | Recs | — | Streaming snapshot | — | — | Concerts | Webhook |
+| Viral Lab | Catalog benchmark | Crowd grounding | Velocity gaps | — | Stem gaps | — | — |
 
 ## Routes
 

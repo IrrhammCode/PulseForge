@@ -10,10 +10,12 @@ import type { SectionLyricsInsight } from "@/types";
 export type { SectionLyricsInsight };
 
 const SECTION_LABELS: Record<keyof Omit<LyricsSections, "raw">, string> = {
+  intro: "Intro",
   verse1: "Verse 1",
   verse2: "Verse 2",
   chorus: "Chorus",
   bridge: "Bridge",
+  outro: "Outro",
 };
 
 const MXM_TO_STUDIO_MOOD: Record<string, (typeof MOOD_OPTIONS)[number]> = {
@@ -46,7 +48,7 @@ export function analyzeSectionSentiments(
   const globalThemes =
     mxmAnalysis?.themes?.main_themes?.map((t) => t.theme.toLowerCase()) ?? [];
   const globalMoods = mxmAnalysis?.moods?.main_moods ?? [];
-  const keys = ["verse1", "verse2", "chorus", "bridge"] as const;
+  const keys = ["intro", "verse1", "verse2", "chorus", "bridge", "outro"] as const;
 
   return keys
     .filter((key) => sections[key].trim())
@@ -156,7 +158,14 @@ export function generateMxmRewriteSuggestions(
   const audience = mxmAnalysis.rating?.audience;
   if (audience === "PG" || audience === "PG-13") {
     const explicitRx = /\b(damn|hell|shit|fuck|bitch)\b/i;
-    const combined = [sections.verse1, sections.verse2, sections.chorus, sections.bridge].join("\n");
+    const combined = [
+      sections.intro,
+      sections.verse1,
+      sections.verse2,
+      sections.chorus,
+      sections.bridge,
+      sections.outro,
+    ].join("\n");
     if (explicitRx.test(combined)) {
       suggestions.push({
         id: "mxm-rating-explicit",

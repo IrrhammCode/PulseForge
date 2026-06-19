@@ -9,6 +9,7 @@ import { WhatIfSimulator } from "@/components/analysis/WhatIfSimulator";
 import { MarketingRecommendations } from "@/components/analysis/MarketingRecommendations";
 import { StatsStrip } from "@/components/analysis/StatsStrip";
 import { ListenerSimulation } from "@/components/analysis/ListenerSimulation";
+import { StreamingInsights } from "@/components/analysis/StreamingInsights";
 import { ReleaseChecklist } from "@/components/studio/ReleaseChecklist";
 import { StudioReleasePack } from "@/components/studio/StudioReleasePack";
 import { ConcertInsights } from "@/components/studio/ConcertInsights";
@@ -229,6 +230,13 @@ export function LaunchTab() {
           </Card>
 
           <ListenerSimulation data={displayAnalysis.simulation} />
+          {displayAnalysis.streaming?.available && (
+            <StreamingInsights
+              data={displayAnalysis.streaming}
+              artistMomentum={displayAnalysis.artistMomentum}
+              velocityHistory={displayAnalysis.velocityHistory}
+            />
+          )}
           <ConcertInsights artistName={project.artistName} genre={project.genre} />
           <N8nWorkflowTrigger
             project={project}

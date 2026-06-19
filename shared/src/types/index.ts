@@ -43,7 +43,7 @@ export interface RichsyncSectionInsight {
 }
 
 export interface SectionLyricsInsight {
-  section: "verse1" | "verse2" | "chorus" | "bridge";
+  section: "intro" | "verse1" | "verse2" | "chorus" | "bridge" | "outro";
   label: string;
   sentiment: "positive" | "neutral" | "melancholic" | "energetic";
   wordCount: number;

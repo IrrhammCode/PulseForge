@@ -1,3 +1,10 @@
+import {
+  compactCompositionPlan,
+  isElevenLabsServerError,
+  promptFromCompositionPlan,
+  sanitizeCompositionPlan,
+} from "@/lib/studio/composition-plan-sanitize";
+
 const ELEVENLABS_URL = "https://api.elevenlabs.io/v1";
 
 const DEFAULT_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
@@ -197,10 +204,12 @@ export async function composeMusic(
   if (!apiKey) {
     throw new Error("ELEVENLABS_API_KEY is not configured");
   }
+  const key = apiKey;
 
   const trimmedPrompt = prompt.trim();
-  if (!trimmedPrompt) {
-    throw new Error("Prompt (including lyrics) is required for music generation");
+  const hasPlan = Boolean(options.compositionPlan);
+  if (!trimmedPrompt && !hasPlan) {
+    throw new Error("Prompt (including lyrics) or composition plan is required for music generation");
   }
 
   const modelId = options.modelId || "music_v2";
@@ -210,13 +219,12 @@ export async function composeMusic(
   };
 
   if (options.compositionPlan) {
-    body.composition_plan = options.compositionPlan;
+    body.composition_plan = sanitizeCompositionPlan(options.compositionPlan);
   } else {
     body.prompt = trimmedPrompt;
-  }
-
-  if (options.musicLengthMs) {
-    body.music_length_ms = options.musicLengthMs;
+    if (options.musicLengthMs) {
+      body.music_length_ms = options.musicLengthMs;
+    }
   }
   if (options.forceInstrumental !== undefined) {
     body.force_instrumental = options.forceInstrumental;
@@ -224,29 +232,69 @@ export async function composeMusic(
 
   const url = `${ELEVENLABS_URL}/music?output_format=mp3_44100_128`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-      "Content-Type": "application/json",
-      Accept: "audio/mpeg",
-    },
-    body: JSON.stringify(body),
-  });
+  async function request(body: Record<string, unknown>): Promise<MusicResult> {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "xi-api-key": key,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`ElevenLabs Music API ${res.status}${errText ? `: ${errText.slice(0, 200)}` : ""}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(
+        `ElevenLabs Music API ${res.status}${errText ? `: ${errText.slice(0, 280)}` : ""}`
+      );
+    }
+
+    const audio = await res.arrayBuffer();
+    const songId = res.headers.get("song-id") || undefined;
+    return { audio, mimeType: "audio/mpeg", songId };
   }
 
-  const audio = await res.arrayBuffer();
-  const songId = res.headers.get("song-id") || undefined;
+  try {
+    return await request(body);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (!isElevenLabsServerError(msg) || !options.compositionPlan) {
+      throw err;
+    }
 
-  return {
-    audio,
-    mimeType: "audio/mpeg",
-    songId,
-  };
+    // Retry with lighter plan (shorter duration, fewer styles, no duplicate chorus)
+    const compactBody = {
+      ...body,
+      composition_plan: compactCompositionPlan(options.compositionPlan),
+    };
+    try {
+      return await request(compactBody);
+    } catch (retryErr) {
+      const retryMsg = retryErr instanceof Error ? retryErr.message : "";
+      if (!isElevenLabsServerError(retryMsg)) {
+        throw retryErr;
+      }
+    }
+
+    const lyricsPrompt =
+      trimmedPrompt ||
+      (options.compositionPlan ? promptFromCompositionPlan(options.compositionPlan) : "");
+    if (!lyricsPrompt) {
+      throw err;
+    }
+
+    // Last resort: natural-language prompt (no composition_plan)
+    const promptBody: Record<string, unknown> = {
+      model_id: modelId,
+      prompt: lyricsPrompt,
+      music_length_ms: Math.min(Math.max(options.musicLengthMs ?? 120_000, 30_000), 300_000),
+    };
+    if (options.forceInstrumental !== undefined) {
+      promptBody.force_instrumental = options.forceInstrumental;
+    }
+    return await request(promptBody);
+  }
 }
 
 /**

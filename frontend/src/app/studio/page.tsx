@@ -6,10 +6,17 @@ import { BarChart3, LayoutGrid, Plus, Search } from "lucide-react";
 import { useStudioProjects } from "@/lib/hooks/useStudioProjects";
 import { ProjectCard } from "@/components/studio/ProjectCard";
 import { NewProjectForm } from "@/components/studio/NewProjectForm";
+import { FillExampleButton } from "@/components/studio/FillExampleButton";
+import {
+  buildExampleCreateInput,
+  getStudioExamplePreset,
+} from "@pulseforge/shared/lib/studio/example-presets";
+import { useRouter } from "next/navigation";
 import { computeDashboardStats } from "@/lib/dashboard";
 import type { StudioProjectStatus } from "@/types/studio";
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const { projects, ready, create, remove } = useStudioProjects();
 
   const [search, setSearch] = useState("");
@@ -55,6 +62,13 @@ export default function ProjectsPage() {
 
   const handleCreateTemplate = (tpl: (typeof templates)[0]) => {
     create(tpl);
+  };
+
+  const handleCreateExample = (presetId: string) => {
+    const preset = getStudioExamplePreset(presetId);
+    if (!preset) return;
+    const project = create(buildExampleCreateInput(preset));
+    router.push(`/studio/${project.id}/write`);
   };
 
   return (
@@ -186,12 +200,28 @@ export default function ProjectsPage() {
             {/* Recommended: Start from Template */}
             <div className="flex flex-col rounded-2xl border border-accent/40 bg-accent-muted/5 p-6">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Start from Template</h3>
+                <h3 className="text-lg font-semibold">Fill examples</h3>
                 <span className="rounded-full bg-accent-muted px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-accent-light">
-                  Recommended
+                  Ready to generate
                 </span>
               </div>
-              <p className="text-sm text-muted">Pick a ready-made example and start immediately.</p>
+              <p className="text-sm text-muted">
+                Pre-filled lyrics, brief, vocal & arrangement — one click to Write, then Generate Full
+                Song.
+              </p>
+              <div className="mt-5">
+                <FillExampleButton onFill={handleCreateExample} />
+              </div>
+            </div>
+
+            <div className="flex flex-col rounded-2xl border border-border bg-surface-elevated p-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Start from Template</h3>
+                <span className="rounded-full bg-surface px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-muted">
+                  Quick
+                </span>
+              </div>
+              <p className="text-sm text-muted">Pick a starter title — fill lyrics yourself.</p>
 
               <div className="mt-4 flex-1 space-y-2">
                 {templates.map((tpl, idx) => (

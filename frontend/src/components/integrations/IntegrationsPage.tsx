@@ -17,14 +17,75 @@ import {
 import { LandingContainer } from "@/components/landing/LandingContainer";
 
 const PARTNER_ROWS = [
-  { key: "musixmatch" as const, name: "Musixmatch", Logo: MusixmatchLogo, tab: "Quick Analyze" },
-  { key: "cyanite" as const, name: "Cyanite", Logo: CyaniteLogo, tab: "Quick Analyze" },
-  { key: "songstats" as const, name: "Songstats", Logo: SongstatsLogo, tab: "Quick Analyze" },
-  { key: "elevenlabs" as const, name: "ElevenLabs", Logo: ElevenLabsLogo, tab: "Write" },
-  { key: "lalal" as const, name: "LALAL.AI", Logo: LalalLogo, tab: "Produce" },
-  { key: "jambase" as const, name: "JamBase", Logo: JamBaseLogo, tab: "Launch" },
-  { key: "n8n" as const, name: "n8n", Logo: N8nLogo, tab: "Launch" },
+  {
+    key: "musixmatch" as const,
+    name: "Musixmatch",
+    Logo: MusixmatchLogo,
+    tabs: "Analyze · Write · Viral",
+    unlocks: "Catalog search, lyrics, moods/themes, richsync timing, similar tracks benchmark",
+  },
+  {
+    key: "cyanite" as const,
+    name: "Cyanite",
+    Logo: CyaniteLogo,
+    tabs: "Analyze · Studio",
+    unlocks: "Spotify audio AI — BPM, valence, segment energy, mood/genre/instrument tags",
+  },
+  {
+    key: "songstats" as const,
+    name: "Songstats",
+    Logo: SongstatsLogo,
+    tabs: "Analyze · Launch · Viral",
+    unlocks: "Cross-platform streams, TikTok/Shazam, velocity history, artist momentum",
+  },
+  {
+    key: "elevenlabs" as const,
+    name: "ElevenLabs",
+    Logo: ElevenLabsLogo,
+    tabs: "Write · Produce",
+    unlocks: "Full song generation (Music API), hook TTS, voice clone, music stem separation",
+  },
+  {
+    key: "lalal" as const,
+    name: "LALAL.AI",
+    Logo: LalalLogo,
+    tabs: "Produce",
+    unlocks: "Production-grade multistem separation (vocals, drums, bass, other)",
+  },
+  {
+    key: "jambase" as const,
+    name: "JamBase",
+    Logo: JamBaseLogo,
+    tabs: "Launch",
+    unlocks: "Live concert listings for release-window routing (demo data without key)",
+  },
+  {
+    key: "n8n" as const,
+    name: "n8n",
+    Logo: N8nLogo,
+    tabs: "Launch",
+    unlocks: "Webhook automation — hit score, Songstats velocity, Cyanite status, JamBase show count",
+  },
 ];
+
+const FEATURE_LABELS: Record<string, string> = {
+  quickAnalyze: "Quick Analyze (catalog)",
+  quickAnalyzeDemo: "Quick Analyze demo mode",
+  studioLocal: "Studio local scoring",
+  studioAudioSignals: "Waveform / BPM signals",
+  exportBackup: "Export & backup",
+  importFromCatalog: "Import from Musixmatch catalog",
+  hookVoicePreview: "Hook voice preview (TTS)",
+  elevenMusic: "ElevenLabs full song generation",
+  elevenStems: "ElevenLabs music stem separation",
+  lalalStems: "LALAL.AI stem separation",
+  richsyncTimeline: "Richsync timeline markers",
+  streamingIntel: "Songstats streaming intel",
+  concertIntel: "Concert intel (JamBase)",
+  concertIntelLive: "JamBase live API",
+  n8nWorkflows: "n8n release webhooks",
+  trendIntel: "Trend keyword scoring",
+};
 
 export function IntegrationsPage() {
   const [caps, setCaps] = useState<SystemCapabilities | null>(null);
@@ -36,9 +97,7 @@ export function IntegrationsPage() {
       .catch(() => setError("Could not load partner status."));
   }, []);
 
-  const activeCount = caps
-    ? Object.values(caps.partners).filter(Boolean).length
-    : 0;
+  const activeCount = caps ? Object.values(caps.partners).filter(Boolean).length : 0;
 
   return (
     <LandingContainer className="py-10 md:py-14">
@@ -46,13 +105,12 @@ export function IntegrationsPage() {
         Partner stack
       </p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Integrations</h1>
-      <p className="mt-3 max-w-xl text-sm text-muted md:text-base">
-        Live status of Musicathon partner APIs. Configure keys in{" "}
-        <code className="text-accent-light">.env.local</code> — see{" "}
-        <Link href="/partners" className="text-accent-light hover:text-foreground">
-          Partners
-        </Link>{" "}
-        for overview.
+      <p className="mt-3 max-w-2xl text-sm text-muted md:text-base">
+        Musicathon partner APIs power PulseForge end-to-end. Configure keys in{" "}
+        <code className="text-accent-light">backend/.env</code> (see{" "}
+        <code className="text-accent-light">backend/.env.example</code>). Optional:{" "}
+        <code className="text-accent-light">TREND_FEED_URL</code> for live trend keywords,{" "}
+        <code className="text-accent-light">MXM_KEY</code> as alias for Musixmatch.
       </p>
 
       {error && <p className="mt-4 text-sm text-warning">{error}</p>}
@@ -64,27 +122,29 @@ export function IntegrationsPage() {
             <span className="text-sm">
               <span className="font-semibold">{activeCount}/7</span> partners configured · tier{" "}
               <span className="font-semibold capitalize">{caps.tier}</span>
+              {caps.demoMode ? " · Musixmatch demo mode" : ""}
             </span>
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {PARTNER_ROWS.map(({ key, name, Logo, tab }) => {
+          <div className="mt-8 grid gap-3">
+            {PARTNER_ROWS.map(({ key, name, Logo, tabs, unlocks }) => {
               const on = caps.partners[key];
               return (
                 <div
                   key={key}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-surface-elevated p-4"
+                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated p-4"
                 >
                   <Logo size={32} />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{name}</p>
-                    <p className="text-xs text-muted">Studio · {tab}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{name}</p>
+                      <span className="text-[10px] text-muted">{tabs}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">{unlocks}</p>
                   </div>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                      on
-                        ? "bg-success/10 text-success"
-                        : "bg-surface text-muted"
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                      on ? "bg-success/10 text-success" : "bg-surface text-muted"
                     }`}
                   >
                     {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
@@ -106,12 +166,26 @@ export function IntegrationsPage() {
                     <X className="h-3.5 w-3.5 text-muted" />
                   )}
                   <span className={enabled ? "text-foreground" : ""}>
-                    {key.replace(/([A-Z])/g, " $1").trim()}
+                    {FEATURE_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim()}
                   </span>
                 </li>
               ))}
             </ul>
           </div>
+
+          <p className="mt-6 text-xs text-muted">
+            <Link href="/partners" className="text-accent-light hover:text-foreground">
+              Partners overview
+            </Link>
+            {" · "}
+            <Link href="/analyze" className="text-accent-light hover:text-foreground">
+              Quick Analyze
+            </Link>
+            {" · "}
+            <Link href="/studio" className="text-accent-light hover:text-foreground">
+              Studio
+            </Link>
+          </p>
         </>
       )}
     </LandingContainer>

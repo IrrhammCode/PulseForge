@@ -31,7 +31,7 @@ function legacyProject(overrides?: Partial<StudioProject>): StudioProject {
 
 describe("storage-schema", () => {
   it("exposes the current schema version", () => {
-    expect(SCHEMA_VERSION).toBe(3);
+    expect(SCHEMA_VERSION).toBe(4);
   });
 
   it("migrates legacy audio without stem metadata", () => {

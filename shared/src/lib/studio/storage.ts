@@ -8,6 +8,9 @@ import type {
   StudioProject,
 } from "@/types/studio";
 import { EMPTY_LYRICS as EMPTY } from "@/types/studio";
+import { generateLyricsStarter } from "@/lib/studio/song-concept";
+import { EMPTY_MUSIC_ARRANGEMENT } from "@/lib/studio/music-arrangement";
+import { primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
 import { computeContentFingerprint } from "@/lib/domain/fingerprint";
 import type { ViralSnapshot } from "@/types/viral";
 import {
@@ -33,20 +36,30 @@ function generateId() {
   return crypto.randomUUID();
 }
 
-function createDefaultVersion(label = "v1"): ProjectVersion {
+function createDefaultVersion(
+  label = "v1",
+  projectSeed?: Pick<
+    import("@/types/studio").StudioProject,
+    "title" | "genre" | "mood" | "genreTags" | "moodTags" | "genreCustom" | "moodCustom" | "creativeBrief"
+  >,
+  initialLyrics?: LyricsSections
+): ProjectVersion {
   const ts = now();
-  // Default starter lyrics with energetic indie pop vibe (reflective transitions like "before spring ends" feel, but generic for any energetic drive-themed track)
-  const starterLyrics: LyricsSections = {
-    verse1: "Windows down, the lights blur on by\nChasing the night under open sky\nEvery turn takes me away from the past\nThe wheels keep turning, the feeling lasts",
-    verse2: "Thoughts speeding faster than the signs\nChange is coming but the road still aligns\nHad to escape before the moment ends\nNow the dark feels like we're just friends",
-    chorus: "Drive on, hearts on fire\nEnergetic rush, taking us higher\nDon't let it fade, keep the engine alive\nIn this indie night, we thrive and survive\nDrive on, we're alive tonight",
-    bridge: "Wind in our hair, the beat in our chest\nLeaving it all in the rearview at best\nEnergetic pulse that we can't slow down\nThis is the moment before it drowns",
-    raw: ""
-  };
+  const starterLyrics =
+    initialLyrics ??
+    (projectSeed
+      ? generateLyricsStarter(projectSeed)
+      : generateLyricsStarter({
+          title: "Untitled",
+          genre: "Indie Pop",
+          mood: "Energetic",
+          genreTags: ["Indie Pop"],
+          moodTags: ["Energetic"],
+        }));
   return {
     id: generateId(),
     label,
-    lyrics: starterLyrics,
+    lyrics: { ...EMPTY, ...starterLyrics, raw: starterLyrics.raw ?? "" },
     createdAt: ts,
     updatedAt: ts,
   };
@@ -91,13 +104,31 @@ export function getProject(id: string): StudioProject | null {
 
 export function createProject(input: CreateProjectInput): StudioProject {
   const ts = now();
-  const version = createDefaultVersion();
+  const genreTags = input.genreTags?.length ? input.genreTags : [input.genre];
+  const moodTags = input.moodTags?.length ? input.moodTags : [input.mood];
+  const projectSeed = {
+    title: input.title.trim(),
+    genre: input.genre,
+    mood: input.mood,
+    genreTags,
+    moodTags,
+    genreCustom: input.genreCustom,
+    moodCustom: input.moodCustom,
+    creativeBrief: input.creativeBrief,
+  };
+  const version = createDefaultVersion("v1", projectSeed, input.initialLyrics);
   const project: StudioProject = {
     id: generateId(),
     title: input.title.trim(),
     artistName: input.artistName.trim(),
-    genre: input.genre,
-    mood: input.mood,
+    genre: primaryGenreLabel(projectSeed),
+    mood: primaryMoodLabel(projectSeed),
+    genreTags,
+    moodTags,
+    genreCustom: input.genreCustom,
+    moodCustom: input.moodCustom,
+    creativeBrief: input.creativeBrief,
+    musicArrangement: input.musicArrangement ?? { ...EMPTY_MUSIC_ARRANGEMENT },
     bpmTarget: input.bpmTarget,
     status: "draft",
     versions: [version],
@@ -114,7 +145,24 @@ export function createProject(input: CreateProjectInput): StudioProject {
 
 export function updateProject(
   id: string,
-  patch: Partial<Pick<StudioProject, "title" | "artistName" | "genre" | "mood" | "bpmTarget" | "status" | "activeVersionId" | "versions">>
+  patch: Partial<
+    Pick<
+      StudioProject,
+      | "title"
+      | "artistName"
+      | "genre"
+      | "mood"
+      | "genreTags"
+      | "moodTags"
+      | "genreCustom"
+      | "moodCustom"
+      | "creativeBrief"
+      | "bpmTarget"
+      | "status"
+      | "activeVersionId"
+      | "versions"
+    >
+  >
 ): StudioProject | null {
   const projects = readAll();
   const index = projects.findIndex((p) => p.id === id);
@@ -126,7 +174,20 @@ export function updateProject(
     (patch.artistName != null && patch.artistName !== prev.artistName) ||
     (patch.genre != null && patch.genre !== prev.genre) ||
     (patch.mood != null && patch.mood !== prev.mood) ||
+    (patch.genreTags != null && JSON.stringify(patch.genreTags) !== JSON.stringify(prev.genreTags)) ||
+    (patch.moodTags != null && JSON.stringify(patch.moodTags) !== JSON.stringify(prev.moodTags)) ||
+    (patch.genreCustom != null && patch.genreCustom !== prev.genreCustom) ||
+    (patch.moodCustom != null && patch.moodCustom !== prev.moodCustom) ||
+    (patch.creativeBrief != null &&
+      JSON.stringify(patch.creativeBrief) !== JSON.stringify(prev.creativeBrief)) ||
     (patch.bpmTarget != null && patch.bpmTarget !== prev.bpmTarget);
+
+  const mergedSeed = { ...prev, ...patch };
+  const normalizedPatch = {
+    ...patch,
+    genre: patch.genre ?? primaryGenreLabel(mergedSeed),
+    mood: patch.mood ?? primaryMoodLabel(mergedSeed),
+  };
 
   let versions = patch.versions ?? prev.versions;
   if (metaChanged && !patch.versions) {
@@ -140,7 +201,7 @@ export function updateProject(
 
   const merged: StudioProject = {
     ...prev,
-    ...patch,
+    ...normalizedPatch,
     versions,
     updatedAt: now(),
   };

@@ -19,8 +19,8 @@ import {
   saveClipAudio,
   deleteClipAudio,
 } from "@/lib/studio/audio-db";
-import { listElevenLabsVoices, synthesizeHookVoice, generateFullSong, ApiError, type ElevenLabsVoice } from "@/lib/api-client";
-import type { DemoAudioMeta } from "@/types/studio";
+import { listElevenLabsVoices, synthesizeHookVoice, generateFullSong, ApiError, type ElevenLabsVoice, fetchRichsync } from "@/lib/api-client";
+import type { DemoAudioMeta, LyricsSections } from "@/types/studio";
 import { formatFileSize, extractWaveformPeaks } from "@/lib/studio/audio-analysis";
 import { StudioFocusHint } from "@/components/studio/StudioFocusHint";
 import { StudioStaleViralBanner } from "@/components/studio/StudioStaleViralBanner";
@@ -39,6 +39,9 @@ import {
   commandSaveTimelineEdits,
 } from "@/lib/domain/project-commands";
 import { resolveTimelineEdits } from "@/lib/domain/version-intelligence";
+import { buildStyleDescriptors } from "@pulseforge/shared/lib/studio/style-prompt";
+import { buildLyricsTimelineFromWordCounts, mapTimelineSectionToLyricsKey } from "@/lib/studio/lyrics";
+import { primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
 
 export function ProduceTab() {
   const params = useParams();
@@ -568,18 +571,13 @@ export function ProduceTab() {
   const handleUpdateLyricsSection = useCallback((sectionId: string, newText: string) => {
     if (!activeVersion) return;
     const lyrics = { ...activeVersion.lyrics };
-    const sid = sectionId.toLowerCase();
-    if (sid.includes('chorus')) lyrics.chorus = newText;
-    else if (sid.includes('verse1') || sid === 'verse1') lyrics.verse1 = newText;
-    else if (sid.includes('verse2') || sid === 'verse2') lyrics.verse2 = newText;
-    else if (sid.includes('bridge')) lyrics.bridge = newText;
-    else lyrics.raw = newText; // fallback
+    const key = mapTimelineSectionToLyricsKey(sectionId);
+    if (key === "raw") lyrics.raw = newText;
+    else lyrics[key] = newText;
 
-    // Persist lyrics
     if (activeVersion && saveLyrics) {
       saveLyrics(activeVersion.id, lyrics);
     }
-    console.log('Lyrics updated for', sectionId);
   }, [activeVersion, saveLyrics]);
 
   // Attach/replace audio file to specific clip (from context menu)
@@ -649,15 +647,19 @@ export function ProduceTab() {
 
   const openSectionEditor = useCallback((sectionId: TimelineSectionId) => {
     if (!activeVersion) return;
-    const lyrics = activeVersion.lyrics || ({} as any);
-    let sectionText = '';
-    const sid = String(sectionId).toLowerCase();
-    if (sid.includes('chorus')) sectionText = lyrics.chorus || lyrics.raw || '';
-    else if (sid.includes('verse2')) sectionText = lyrics.verse2 || '';
-    else if (sid.includes('verse1')) sectionText = lyrics.verse1 || '';
-    else if (sid.includes('bridge')) sectionText = lyrics.bridge || '';
-    else sectionText = lyrics.chorus || lyrics.verse1 || lyrics.raw || 'Main section';
-    setSectionEdit({ sectionId, lyrics: sectionText, extra: '' });
+    const lyrics = activeVersion.lyrics || ({} as LyricsSections);
+    const key = mapTimelineSectionToLyricsKey(String(sectionId));
+    let sectionText = key !== "raw" ? lyrics[key] || "" : lyrics.raw || "";
+    if (!sectionText.trim()) {
+      const sid = String(sectionId).toLowerCase();
+      if (sid.includes("chorus")) sectionText = lyrics.chorus || "";
+      else if (sid.includes("verse2")) sectionText = lyrics.verse2 || "";
+      else if (sid.includes("verse1")) sectionText = lyrics.verse1 || "";
+      else if (sid.includes("bridge")) sectionText = lyrics.bridge || "";
+      else if (sid.includes("intro")) sectionText = lyrics.intro || "";
+      else if (sid.includes("outro")) sectionText = lyrics.outro || "";
+    }
+    setSectionEdit({ sectionId, lyrics: sectionText, extra: "" });
   }, [activeVersion]);
 
   const closeSectionEditor = () => {
@@ -672,8 +674,9 @@ export function ProduceTab() {
     setPreviewTrim({ start: 0, end: 1 }); // reset trim
     try {
       const mxmCoach = activeVersion.analysis?.meta?.mxmCoach;
-      const moods = (mxmCoach?.moods || []).slice(0, 2).join(' ');
-      const styleHint = moods ? `in ${moods} style` : 'studio quality production';
+      const styleHint = project
+        ? buildStyleDescriptors(project, mxmCoach).slice(0, 4).join(", ")
+        : (mxmCoach?.moods || []).slice(0, 2).join(" ");
       const basePromptFromEdits = (studioTimelineEdits as any)?.generationPrompt || '';
       const plan = (studioTimelineEdits as any)?.compositionPlan;
 
@@ -698,8 +701,9 @@ export function ProduceTab() {
           if (userExtra) modifiedPlan.chunks[chunkIdx].positive_styles = [...(modifiedPlan.chunks[chunkIdx].positive_styles || []), userExtra.replace('[VOCALS ONLY]', '').trim()];
         }
         opts.compositionPlan = modifiedPlan;
+        delete opts.musicLengthMs;
       } else {
-        targetedPrompt = `Targeted section. ${styleHint}. ${basePromptFromEdits.substring(0,150)}. ${isVocalsOnly ? 'a cappella vocals only.' : ''} Lyrics: ${editedLyrics} ${userExtra}`;
+        targetedPrompt = `Targeted section. Style: ${styleHint || "studio quality production"}. ${basePromptFromEdits.substring(0,150)}. ${isVocalsOnly ? 'a cappella vocals only.' : ''} Lyrics: ${editedLyrics} ${userExtra}`;
       }
 
       const blob = await generateFullSong(targetedPrompt, opts);
@@ -815,8 +819,9 @@ export function ProduceTab() {
     if (!activeVersion) return;
 
     const mxmCoach = activeVersion.analysis?.meta?.mxmCoach;
-    const moods = (mxmCoach?.moods || []).slice(0, 2).join(' ');
-    const styleHint = moods ? `in ${moods} style` : 'studio quality production';
+    const styleHint = project
+      ? buildStyleDescriptors(project, mxmCoach).slice(0, 4).join(", ")
+      : (mxmCoach?.moods || []).slice(0, 2).join(" ");
 
     const basePromptFromEdits = (studioTimelineEdits as any)?.generationPrompt || '';
     const plan = (studioTimelineEdits as any)?.compositionPlan;
@@ -843,6 +848,7 @@ export function ProduceTab() {
         }
       }
       opts.compositionPlan = modifiedPlan;
+      delete opts.musicLengthMs;
     } else {
       // Add neighbor context for seamless continuation
       const chunks = (studioTimelineEdits as any)?.compositionPlan?.chunks || [];
@@ -1002,8 +1008,8 @@ export function ProduceTab() {
     let richsync: any = null;
     if (activeVersion.catalogMeta?.mxmTrackId) {
       try {
-        const body = await (await import('@/lib/musixmatch/client')).getRichsync(Number(activeVersion.catalogMeta.mxmTrackId));
-        richsync = body ? (await import('@/lib/musixmatch/richsync-parser')).parseRichsyncBody(body) : null;
+        const result = await fetchRichsync(Number(activeVersion.catalogMeta.mxmTrackId));
+        richsync = result?.richsync ?? null;
       } catch {}
     }
 
@@ -1017,19 +1023,7 @@ export function ProduceTab() {
       }));
       updates = { markers };
     } else {
-      const getWC = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
-      const counts = { verse1: getWC(lyrics.verse1), chorus: getWC(lyrics.chorus), verse2: getWC(lyrics.verse2), bridge: getWC(lyrics.bridge) };
-      const total = Object.values(counts).reduce((a,b)=>a+b,0) || 1;
-      const props = { verse1: counts.verse1/total*100, chorus: counts.chorus/total*100, verse2: counts.verse2/total*100, bridge: counts.bridge/total*100 };
-      updates = {
-        sections: [
-          { sectionId: 'verse1', startPercent: 0, widthPercent: props.verse1 },
-          { sectionId: 'chorus1', startPercent: props.verse1, widthPercent: props.chorus },
-          { sectionId: 'verse2', startPercent: props.verse1 + props.chorus, widthPercent: props.verse2 },
-          { sectionId: 'chorus2', startPercent: props.verse1 + props.chorus + props.verse2, widthPercent: props.chorus },
-          { sectionId: 'bridge', startPercent: props.verse1 + props.chorus + props.verse2 + props.chorus, widthPercent: props.bridge },
-        ]
-      };
+      updates = { sections: buildLyricsTimelineFromWordCounts(lyrics) };
     }
     const newEdits = { ...baseEdits, ...updates, updatedAt: new Date().toISOString() };
     commandSaveTimelineEdits(projectId, activeVersion.id, newEdits);
@@ -1283,10 +1277,9 @@ export function ProduceTab() {
               onClick={() => {
                 if (activeVersion && sectionEdit && saveLyrics) {
                   const newL = { ...activeVersion.lyrics };
-                  const key = (String(sectionEdit.sectionId).toLowerCase().includes('chorus') ? 'chorus' :
-                               String(sectionEdit.sectionId).toLowerCase().includes('verse2') ? 'verse2' :
-                               String(sectionEdit.sectionId).toLowerCase().includes('bridge') ? 'bridge' : 'verse1') as keyof typeof newL;
-                  if (key in newL) (newL as any)[key] = sectionEdit.lyrics;
+                  const key = mapTimelineSectionToLyricsKey(String(sectionEdit.sectionId));
+                  if (key !== "raw") newL[key] = sectionEdit.lyrics;
+                  else newL.raw = sectionEdit.lyrics;
                   saveLyrics(activeVersion.id, newL);
                 }
                 closeSectionEditor();

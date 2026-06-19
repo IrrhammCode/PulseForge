@@ -12,6 +12,10 @@ import { LyricsAnalysis } from "@/components/analysis/LyricsAnalysis";
 import { ListenerSimulation } from "@/components/analysis/ListenerSimulation";
 import { EnergyInsights } from "@/components/analysis/EnergyInsights";
 import { MarketingRecommendations } from "@/components/analysis/MarketingRecommendations";
+import { StreamingInsights } from "@/components/analysis/StreamingInsights";
+import { ContextInsights } from "@/components/analysis/ContextInsights";
+import { SimilarTracksPanel } from "@/components/analysis/SimilarTracksPanel";
+import { PartnerStackSummary } from "@/components/analysis/PartnerStackSummary";
 import { PartnerBadges } from "@/components/analysis/PartnerBadges";
 import { AnalysisProgress } from "@/components/ui/Skeleton";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -153,6 +157,7 @@ export function StudioAnalyzePanel({ project, onAnalysisSaved }: StudioAnalyzePa
 
       {analysis && !isAnalyzing && (
         <div className="space-y-6">
+          <PartnerStackSummary meta={analysis.meta} streaming={analysis.streaming} />
           <ViralLabCTA
             projectId={project.id}
             projectTitle={project.title}
@@ -166,6 +171,29 @@ export function StudioAnalyzePanel({ project, onAnalysisSaved }: StudioAnalyzePa
             <ListenerSimulation data={analysis.simulation} />
             <EnergyInsights data={analysis.energy} />
           </div>
+          {(analysis.catalogBenchmark?.similarTracks?.length ?? 0) > 0 && (
+            <SimilarTracksPanel benchmark={analysis.catalogBenchmark} />
+          )}
+          {(analysis.streaming || analysis.seasonalContext || analysis.releaseHistory) && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">
+                Streaming & context
+              </h3>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <ContextInsights
+                  seasonal={analysis.seasonalContext}
+                  releaseHistory={analysis.releaseHistory}
+                />
+                {analysis.streaming ? (
+                  <StreamingInsights
+                    data={analysis.streaming}
+                    artistMomentum={analysis.artistMomentum}
+                    velocityHistory={analysis.velocityHistory}
+                  />
+                ) : null}
+              </div>
+            </div>
+          )}
           <MarketingRecommendations recommendations={analysis.recommendations} />
         </div>
       )}

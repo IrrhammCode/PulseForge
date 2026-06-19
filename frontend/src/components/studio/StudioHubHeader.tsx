@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronDown, Copy } from "lucide-react";
 import { CloudSyncButton } from "@/components/studio/CloudSyncButton";
 import { ViralLabCTA } from "@/components/viral/ViralLabCTA";
 import type { StudioProject } from "@/types/studio";
-import { PROJECT_STATUSES } from "@/types/studio";
+import { PROJECT_STATUSES, primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
 import { copyVersionAudio } from "@/lib/studio/audio-db";
 import {
   commandAddVersion,
@@ -59,7 +59,7 @@ export function StudioHubHeader({ project, onProjectChange }: StudioHubHeaderPro
           </span>
         </div>
         <p className="mt-1 text-sm text-muted">
-          {project.artistName} · {project.genre} · {project.mood}
+          {project.artistName} · {primaryGenreLabel(project)} · {primaryMoodLabel(project)}
           {project.bpmTarget ? ` · ${project.bpmTarget} BPM` : ""}
         </p>
       </div>

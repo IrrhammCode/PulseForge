@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Check, Loader2, Workflow } from "lucide-react";
 import type { StudioProject } from "@/types/studio";
 import type { TrackAnalysis, WhatIfParams } from "@/types";
-import { triggerN8nWorkflow, ApiError } from "@/lib/api-client";
+import { triggerN8nWorkflow, fetchConcertIntel, ApiError } from "@/lib/api-client";
 import { N8nLogo } from "@/components/icons/BrandLogos";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
 
 interface N8nWorkflowTriggerProps {
   project: StudioProject;
@@ -33,18 +34,38 @@ export function N8nWorkflowTrigger({
     setLoading(true);
     setError(null);
     try {
+      let nearbyShows: number | undefined;
+      try {
+        const concerts = await fetchConcertIntel(project.artistName, project.genre);
+        nearbyShows = concerts.events.length;
+      } catch {
+        nearbyShows = undefined;
+      }
+
+      const platformHighlights: Record<string, string> = {};
+      for (const p of analysis?.streaming?.platforms ?? []) {
+        if (p.streams) platformHighlights[p.platform] = `${p.streams} streams`;
+        else if (p.shazams) platformHighlights[p.platform] = `${p.shazams} shazams`;
+        else if (p.tiktokCreates) platformHighlights[p.platform] = `${p.tiktokCreates} TikTok creates`;
+      }
+
       await triggerN8nWorkflow({
         event: "studio.launch.pack_ready",
         projectId: project.id,
         projectTitle: project.title,
         artistName: project.artistName,
-        genre: project.genre,
-        mood: project.mood,
+        genre: primaryGenreLabel(project),
+        mood: primaryMoodLabel(project),
         versionLabel,
         hitScore: analysis?.hitPotential.overall,
+        hookStrength: analysis?.lyrics.hookStrength,
         targetReleaseDate,
         whatIf,
         partners: analysis?.meta?.partners,
+        songstatsVelocity: analysis?.streaming?.velocityScore,
+        cyaniteStatus: analysis?.energy.source,
+        platformHighlights: Object.keys(platformHighlights).length ? platformHighlights : undefined,
+        nearbyShows,
         timestamp: new Date().toISOString(),
       });
       setSent(true);
@@ -62,7 +83,7 @@ export function N8nWorkflowTrigger({
         title="n8n Automation"
         subtitle={
           enabled
-            ? "Push release context to your n8n workflow (Slack, email, CRM, etc.)"
+            ? "Push full partner context — hit score, Songstats velocity, Cyanite status, JamBase shows"
             : "Add N8N_WEBHOOK_URL to connect your automation stack"
         }
         action={<N8nLogo size={20} />}
@@ -71,7 +92,8 @@ export function N8nWorkflowTrigger({
       {enabled ? (
         <div className="space-y-3">
           <p className="text-sm text-muted">
-            Sends project metadata, hit score, What-If params, and release date to your webhook.
+            Sends project metadata, streaming highlights, concert count, hit score, and What-If params
+            to your n8n workflow (Slack, email, CRM, distro bots).
           </p>
           <button
             type="button"
@@ -102,7 +124,7 @@ export function N8nWorkflowTrigger({
         <p className="text-sm text-muted">
           Create a Webhook node in n8n, copy the production URL, and set{" "}
           <code className="text-accent-light">N8N_WEBHOOK_URL</code> in{" "}
-          <code className="text-accent-light">.env.local</code>.
+          <code className="text-accent-light">backend/.env</code>.
         </p>
       )}
     </Card>

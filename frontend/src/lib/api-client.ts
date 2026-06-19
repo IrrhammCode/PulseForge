@@ -13,6 +13,19 @@ export async function fetchCatalogTrack(trackId: string): Promise<AppTrack> {
   return data.track as AppTrack;
 }
 
+export async function fetchRichsync(trackId: number): Promise<{
+  richsync: import("@pulseforge/shared/lib/musixmatch/richsync-parser").RichsyncParseResult;
+  source: string;
+} | null> {
+  const res = await fetch(`/api/catalog/richsync/${trackId}`);
+  if (res.status === 404 || res.status === 503) return null;
+  const data = await res.json();
+  if (!res.ok) {
+    throw new ApiError(data.error ?? "Richsync fetch failed", res.status);
+  }
+  return data;
+}
+
 export async function searchTracks(query: string): Promise<AppTrack[]> {
   const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
   const data = await res.json();

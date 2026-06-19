@@ -113,6 +113,38 @@ export function analyzeViralGaps(
     });
   }
 
+  if (energy.source === "cyanite-processing") {
+    gaps.push({
+      id: "cyanite-pending",
+      category: "production",
+      severity: "medium",
+      title: "Cyanite audio AI still processing",
+      description:
+        "Cyanite enqueued analysis for this Spotify track. Re-analyze in a few minutes for real BPM, energy curve, and mood/genre tags instead of estimates.",
+      impactPoints: 10,
+      studioTab: "analyze",
+      metric: "Cyanite status",
+      currentValue: "processing",
+      targetValue: "finished",
+    });
+  }
+
+  if (energy.source === "estimated" && analysis.meta?.partners?.includes("Cyanite")) {
+    gaps.push({
+      id: "cyanite-estimated",
+      category: "production",
+      severity: "low",
+      title: "Using estimated energy (Cyanite unavailable)",
+      description:
+        "Import a catalog track with Spotify ID or wait for Cyanite to finish. Estimated BPM/energy reduces scoring confidence.",
+      impactPoints: 6,
+      studioTab: "analyze",
+      metric: "Energy source",
+      currentValue: "estimated",
+      targetValue: "cyanite",
+    });
+  }
+
   if (crowd.aggregates.skipHookRate >= 18) {
     gaps.push({
       id: "hook-dropoff",

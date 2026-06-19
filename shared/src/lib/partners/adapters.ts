@@ -15,6 +15,7 @@ import { getTrackStats, type SongstatsInsights } from "@/lib/songstats/client";
 import { getArtistMomentum } from "@/lib/songstats/artist-momentum";
 import { getTrackHistoricVelocity } from "@/lib/songstats/historic-velocity";
 import type { ArtistMomentumInsights, VelocityHistoryInsights } from "@/types";
+import { hasMusixmatchKey } from "@/lib/musixmatch/client";
 
 export interface CatalogAnalysisBundle {
   track: AppTrack;
@@ -33,7 +34,7 @@ export interface PartnerAdapter {
 }
 
 export const partnerAdapters: PartnerAdapter[] = [
-  { id: "musixmatch", available: () => Boolean(process.env.MUSIXMATCH_API_KEY) },
+  { id: "musixmatch", available: () => hasMusixmatchKey() },
   { id: "cyanite", available: () => Boolean(process.env.CYANITE_ACCESS_TOKEN) },
   { id: "songstats", available: () => Boolean(process.env.SONGSTATS_API_KEY) },
   { id: "elevenlabs", available: () => Boolean(process.env.ELEVENLABS_API_KEY) },

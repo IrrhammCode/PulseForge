@@ -1,5 +1,6 @@
 import type { LyricsStructure, MxmCoachContext, SectionLyricsInsight } from "@/types";
 import type { LyricsSections } from "@/types/studio";
+import type { TimelineSectionEdit, KnownTimelineSectionId } from "@/types/viral";
 import { analyzeLyrics } from "@/lib/scoring/lyrics-analyzer";
 import {
   analyzeSectionSentiments,
@@ -8,13 +9,69 @@ import {
 import type { MxmAnalysisRaw } from "@/lib/musixmatch/types";
 
 const SECTION_HEADERS: Record<keyof Omit<LyricsSections, "raw">, RegExp> = {
+  intro: /^\[?\s*intro\s*\]?$/i,
   verse1: /^\[?\s*verse\s*1\s*\]?$/i,
   verse2: /^\[?\s*verse\s*2\s*\]?$/i,
   chorus: /^\[?\s*chorus\s*\]?$/i,
   bridge: /^\[?\s*bridge\s*\]?$/i,
+  outro: /^\[?\s*outro\s*\]?$/i,
 };
 
-type SectionKey = keyof Omit<LyricsSections, "raw">;
+export type LyricsSectionKey = keyof Omit<LyricsSections, "raw">;
+
+export const LYRICS_SECTION_ORDER: LyricsSectionKey[] = [
+  "intro",
+  "verse1",
+  "chorus",
+  "verse2",
+  "bridge",
+  "outro",
+];
+
+type SectionKey = LyricsSectionKey;
+
+/** Map NLE timeline section id → lyrics field (chorus1/chorus2 both → chorus). */
+export function mapTimelineSectionToLyricsKey(sectionId: string): LyricsSectionKey | "raw" {
+  const sid = sectionId.toLowerCase();
+  if (sid.includes("intro")) return "intro";
+  if (sid.includes("outro")) return "outro";
+  if (sid.includes("chorus")) return "chorus";
+  if (sid.includes("verse2")) return "verse2";
+  if (sid.includes("bridge")) return "bridge";
+  if (sid.includes("verse1") || sid === "verse1") return "verse1";
+  return "raw";
+}
+
+export function sectionWordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Proportional timeline sections from lyrics word counts (includes intro/outro when filled). */
+export function buildLyricsTimelineFromWordCounts(lyrics: LyricsSections): TimelineSectionEdit[] {
+  const raw: { sectionId: KnownTimelineSectionId; weight: number }[] = [
+    { sectionId: "intro", weight: sectionWordCount(lyrics.intro) },
+    { sectionId: "verse1", weight: sectionWordCount(lyrics.verse1) },
+    { sectionId: "chorus1", weight: sectionWordCount(lyrics.chorus) },
+    { sectionId: "verse2", weight: sectionWordCount(lyrics.verse2) },
+    { sectionId: "chorus2", weight: sectionWordCount(lyrics.chorus) },
+    { sectionId: "bridge", weight: sectionWordCount(lyrics.bridge) },
+    { sectionId: "outro", weight: sectionWordCount(lyrics.outro) },
+  ];
+  const entries = raw.filter((e) => e.weight > 0);
+
+  const total = entries.reduce((sum, e) => sum + e.weight, 0) || 1;
+  let cursor = 0;
+  return entries.map((e) => {
+    const widthPercent = (e.weight / total) * 100;
+    const section: TimelineSectionEdit = {
+      sectionId: e.sectionId,
+      startPercent: cursor,
+      widthPercent,
+    };
+    cursor += widthPercent;
+    return section;
+  });
+}
 
 /** Best line for voice preview (chorus first, then first non-empty section). */
 export function getHookPreviewText(sections: LyricsSections): string {
@@ -24,7 +81,7 @@ export function getHookPreviewText(sections: LyricsSections): string {
     .find(Boolean);
   if (chorusLine) return chorusLine;
 
-  for (const key of ["verse1", "verse2", "bridge"] as const) {
+  for (const key of ["intro", "verse1", "verse2", "chorus", "bridge", "outro"] as const) {
     const line = sections[key]
       .split("\n")
       .map((l) => l.trim())
@@ -47,10 +104,12 @@ export function composeLyricsBody(sections: LyricsSections): string {
     if (text.trim()) blocks.push(`${label}\n${text.trim()}`);
   };
 
+  add("[Intro]", sections.intro);
   add("[Verse 1]", sections.verse1);
-  add("[Verse 2]", sections.verse2);
   add("[Chorus]", sections.chorus);
+  add("[Verse 2]", sections.verse2);
   add("[Bridge]", sections.bridge);
+  add("[Outro]", sections.outro);
 
   return blocks.join("\n\n");
 }
@@ -58,15 +117,17 @@ export function composeLyricsBody(sections: LyricsSections): string {
 export function parseLyricsSections(body: string): LyricsSections {
   const trimmed = body.trim();
   if (!trimmed) {
-    return { verse1: "", verse2: "", chorus: "", bridge: "", raw: "" };
+    return { intro: "", verse1: "", verse2: "", chorus: "", bridge: "", outro: "", raw: "" };
   }
 
   const lines = trimmed.split("\n");
   const sections: Record<SectionKey, string[]> = {
+    intro: [],
     verse1: [],
     verse2: [],
     chorus: [],
     bridge: [],
+    outro: [],
   };
 
   let current: SectionKey | null = null;
@@ -85,14 +146,16 @@ export function parseLyricsSections(body: string): LyricsSections {
   }
 
   if (!hasHeaders) {
-    return { verse1: "", verse2: "", chorus: "", bridge: "", raw: trimmed };
+    return { intro: "", verse1: "", verse2: "", chorus: "", bridge: "", outro: "", raw: trimmed };
   }
 
   return {
+    intro: sections.intro.join("\n").trim(),
     verse1: sections.verse1.join("\n").trim(),
     verse2: sections.verse2.join("\n").trim(),
     chorus: sections.chorus.join("\n").trim(),
     bridge: sections.bridge.join("\n").trim(),
+    outro: sections.outro.join("\n").trim(),
     raw: "",
   };
 }
@@ -100,10 +163,12 @@ export function parseLyricsSections(body: string): LyricsSections {
 export function hasLyricsContent(sections: LyricsSections): boolean {
   return Boolean(
     sections.raw.trim() ||
+      sections.intro.trim() ||
       sections.verse1.trim() ||
       sections.verse2.trim() ||
       sections.chorus.trim() ||
-      sections.bridge.trim()
+      sections.bridge.trim() ||
+      sections.outro.trim()
   );
 }
 
@@ -124,14 +189,16 @@ export interface SectionDiff {
 }
 
 const SECTION_LABELS: Record<SectionKey, string> = {
+  intro: "Intro",
   verse1: "Verse 1",
   verse2: "Verse 2",
   chorus: "Chorus",
   bridge: "Bridge",
+  outro: "Outro",
 };
 
 export function diffLyricsSections(a: LyricsSections, b: LyricsSections): SectionDiff[] {
-  const keys: SectionKey[] = ["verse1", "verse2", "chorus", "bridge"];
+  const keys: SectionKey[] = LYRICS_SECTION_ORDER;
   return keys.map((section) => {
     const before = a[section].trim();
     const after = b[section].trim();
@@ -278,7 +345,14 @@ export function generateRewriteSuggestions(
     });
   }
 
-  const combined = [sections.verse1, sections.verse2, sections.chorus, sections.bridge].join("\n");
+  const combined = [
+    sections.intro,
+    sections.verse1,
+    sections.verse2,
+    sections.chorus,
+    sections.bridge,
+    sections.outro,
+  ].join("\n");
   for (const filler of FILLER_WORDS) {
     const rx = new RegExp(`\\b${filler}\\b`, "gi");
     const match = combined.match(rx);

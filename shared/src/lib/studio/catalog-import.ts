@@ -64,26 +64,30 @@ export function buildImportLyrics(
     const chorusText = byRepeat[0]?.text ?? analysis!.lyrics.hookLine;
     const verseCandidates = timed.filter((s) => s.text !== chorusText);
     return {
+      intro: "",
       verse1: verseCandidates[0]?.text ?? "",
       verse2: verseCandidates[1]?.text ?? "",
       chorus: chorusText,
       bridge: verseCandidates[2]?.text ?? "",
+      outro: "",
       raw: "",
     };
   }
 
   const hook = analysis?.lyrics.hookLine ?? "";
   if (!hook) {
-    return { verse1: "", verse2: "", chorus: "", bridge: "", raw: "" };
+    return { intro: "", verse1: "", verse2: "", chorus: "", bridge: "", outro: "", raw: "" };
   }
 
-  return {
-    verse1: "",
-    verse2: "",
-    chorus: hook,
-    bridge: "",
-    raw: `[Chorus]\n${hook}`,
-  };
+    return {
+      verse1: "",
+      verse2: "",
+      chorus: hook,
+      bridge: "",
+      intro: "",
+      outro: "",
+      raw: `[Chorus]\n${hook}`,
+    };
 }
 
 export function buildCreateProjectInput(
@@ -101,11 +105,17 @@ export function buildCreateProjectInput(
           ? "Uplifting"
           : "Energetic";
 
+  const genre = mapCatalogGenre(track.genre ?? analysis?.track.genre);
+  const mood = mapMxmMoodToStudioMood(mxmAnalysis, moodFallback);
+  const mxmMoods = mxmAnalysis?.moods?.main_moods?.slice(0, 3);
+
   return {
     title: track.title,
     artistName: track.artist,
-    genre: mapCatalogGenre(track.genre ?? analysis?.track.genre),
-    mood: mapMxmMoodToStudioMood(mxmAnalysis, moodFallback),
+    genre,
+    mood,
+    genreTags: [genre],
+    moodTags: mxmMoods?.length ? mxmMoods : [mood],
     bpmTarget: analysis?.energy.bpm,
   };
 }

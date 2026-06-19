@@ -8,10 +8,12 @@ import { composeLyricsBody, hasLyricsContent, wordCount } from "@/lib/studio/lyr
 import { cn } from "@/lib/utils";
 
 const SECTIONS: { key: keyof Omit<LyricsSections, "raw">; label: string; hint: string }[] = [
+  { key: "intro", label: "Intro", hint: "Set the vibe — ad-libs, hums, or a one-line tease before verse 1" },
   { key: "verse1", label: "Verse 1", hint: "Set the scene — keep lines conversational" },
   { key: "chorus", label: "Chorus", hint: "Your hook lives here — short & repeatable" },
   { key: "verse2", label: "Verse 2", hint: "Deepen the story or flip the perspective" },
   { key: "bridge", label: "Bridge", hint: "Contrast before the final chorus" },
+  { key: "outro", label: "Outro", hint: "Land the emotion — fade, repeat hook fragment, or ad-lib out" },
 ];
 
 interface LyricsEditorProps {
@@ -107,7 +109,7 @@ export function LyricsEditor({ lyrics, onChange, disabled }: LyricsEditorProps) 
                 value={lyrics[key]}
                 onChange={(e) => updateSection(key, e.target.value)}
                 disabled={disabled}
-                rows={key === "chorus" ? 5 : 4}
+                rows={key === "chorus" ? 5 : key === "intro" || key === "outro" ? 3 : 4}
                 placeholder={`Write ${label.toLowerCase()}…`}
                 className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-sm leading-relaxed outline-none transition placeholder:text-muted/60 focus:border-accent/40 disabled:opacity-50"
               />
@@ -120,7 +122,7 @@ export function LyricsEditor({ lyrics, onChange, disabled }: LyricsEditorProps) 
           onChange={(e) => updateRaw(e.target.value)}
           disabled={disabled}
           rows={18}
-          placeholder="[Verse 1]&#10;Your lines here…&#10;&#10;[Chorus]&#10;Hook line…"
+          placeholder="[Intro]&#10;Yeah, yeah…&#10;&#10;[Verse 1]&#10;Your lines here…&#10;&#10;[Chorus]&#10;Hook line…&#10;&#10;[Outro]&#10;Fade on the hook…"
           className="w-full resize-y rounded-xl border border-border bg-surface-elevated px-4 py-3 font-mono text-sm leading-relaxed outline-none transition placeholder:text-muted/60 focus:border-accent/40 disabled:opacity-50"
         />
       )}

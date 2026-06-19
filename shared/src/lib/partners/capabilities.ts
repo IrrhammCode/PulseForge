@@ -28,9 +28,15 @@ export interface SystemCapabilities {
     exportBackup: boolean;
     importFromCatalog: boolean;
     hookVoicePreview: boolean;
+    elevenMusic: boolean;
+    elevenStems: boolean;
     lalalStems: boolean;
+    richsyncTimeline: boolean;
+    streamingIntel: boolean;
     concertIntel: boolean;
+    concertIntelLive: boolean;
     n8nWorkflows: boolean;
+    trendIntel: boolean;
   };
   demoMode: boolean;
 }
@@ -65,11 +71,17 @@ export function getSystemCapabilities(): SystemCapabilities {
       studioLocal: true,
       studioAudioSignals: true,
       exportBackup: true,
-      importFromCatalog: true,
+      importFromCatalog: partners.musixmatch,
       hookVoicePreview: partners.elevenlabs,
+      elevenMusic: partners.elevenlabs,
+      elevenStems: partners.elevenlabs,
       lalalStems: partners.lalal,
+      richsyncTimeline: partners.musixmatch,
+      streamingIntel: partners.songstats,
       concertIntel: true,
+      concertIntelLive: partners.jambase,
       n8nWorkflows: partners.n8n,
+      trendIntel: true,
     },
     demoMode: !partners.musixmatch,
   };

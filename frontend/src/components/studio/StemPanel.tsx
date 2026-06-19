@@ -38,14 +38,21 @@ export function StemPanel({
   const [stemStep, setStemStep] = useState(0);
   const [previewId, setPreviewId] = useState<StemId | null>(null);
   const [lalalAvailable, setLalalAvailable] = useState(false);
+  const [elevenStemsAvailable, setElevenStemsAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchCapabilities()
-      .then((c) => setLalalAvailable(c.features.lalalStems))
-      .catch(() => setLalalAvailable(false));
+      .then((c) => {
+        setLalalAvailable(c.features.lalalStems);
+        setElevenStemsAvailable(c.features.elevenStems);
+      })
+      .catch(() => {
+        setLalalAvailable(false);
+        setElevenStemsAvailable(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -215,11 +222,10 @@ export function StemPanel({
                 )}
               </button>
             )}
-            {lalalAvailable && (
+            {elevenStemsAvailable && (
               <button
                 type="button"
                 onClick={async () => {
-                  // Alternative: ElevenLabs Music stem separation (great for tracks generated with Eleven Music)
                   const mixBlob = await getAudioBlob(projectId, versionId, "mix");
                   if (!mixBlob) return;
                   setSeparating(true);
@@ -246,7 +252,7 @@ export function StemPanel({
                 disabled={separating}
                 className="btn-secondary text-xs"
               >
-                Eleven Music Stems
+                Eleven Music stems
               </button>
             )}
             <button

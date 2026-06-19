@@ -187,6 +187,35 @@ export interface ProcessedDemo {
   mixBlob: Blob;
 }
 
+export async function processGeneratedSong(
+  blob: Blob,
+  fileName = "generated-song.mp3"
+): Promise<ProcessedDemo> {
+  const file = new File([blob], fileName, { type: blob.type || "audio/mpeg" });
+  const buffer = await decodeAudioFile(file);
+
+  if (buffer.duration > MAX_DEMO_DURATION_SEC) {
+    throw new AudioProcessingError("Generated song exceeds max duration.");
+  }
+
+  const waveform = extractWaveformPeaks(buffer);
+  const estimatedBpm = estimateBpm(buffer);
+
+  const meta: DemoAudioMeta = {
+    fileName,
+    mimeType: blob.type || "audio/mpeg",
+    sizeBytes: blob.size,
+    durationSec: buffer.duration,
+    uploadedAt: new Date().toISOString(),
+    waveform,
+    estimatedBpm,
+    stemsReady: false,
+    stems: DEFAULT_STEMS.map((s) => ({ ...s })),
+  };
+
+  return { meta, mixBlob: blob };
+}
+
 export async function processDemoUpload(file: File): Promise<ProcessedDemo> {
   validateDemoFile(file);
   const buffer = await decodeAudioFile(file);

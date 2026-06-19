@@ -3,10 +3,12 @@ import multer from "multer";
 import { getSystemCapabilities } from "@pulseforge/shared/lib/partners/capabilities";
 import {
   getTrackDetails,
+  getRichsync,
   hasMusixmatchKey,
   mapTrackToApp,
   searchTracks,
 } from "@pulseforge/shared/lib/musixmatch/client";
+import { parseRichsyncBody } from "@pulseforge/shared/lib/musixmatch/richsync-parser";
 import { mockTracksToApp, searchMockTracks } from "@pulseforge/shared/lib/partners/mock-catalog";
 import { fetchCatalogBundle } from "@pulseforge/shared/lib/partners/adapters";
 import { fetchCatalogBenchmark } from "@pulseforge/shared/lib/musixmatch/catalog-intelligence";
@@ -126,6 +128,31 @@ apiRouter.get("/catalog/track/:id", async (req, res) => {
   }
 });
 
+apiRouter.get("/catalog/richsync/:id", async (req, res) => {
+  const trackId = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(trackId)) {
+    res.status(400).json({ error: "Invalid track id" });
+    return;
+  }
+
+  if (!hasMusixmatchKey()) {
+    res.status(503).json({ error: "Musixmatch API key not configured", demoMode: true });
+    return;
+  }
+
+  try {
+    const body = await getRichsync(trackId);
+    if (!body) {
+      res.status(404).json({ error: "Richsync not available for this track" });
+      return;
+    }
+    const parsed = parseRichsyncBody(body);
+    res.json({ richsync: parsed, source: "musixmatch" });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Richsync fetch failed" });
+  }
+});
+
 apiRouter.post("/analyze", async (req, res) => {
   try {
     const body = req.body as {
@@ -159,6 +186,7 @@ apiRouter.post("/analyze", async (req, res) => {
     let bundle;
     let source = "musixmatch+cyanite+songstats+scoring-engine";
     let demoMode = false;
+    const trendFeed = await getLiveTrendFeed();
     try {
       bundle = await fetchCatalogBundle(body.track);
     } catch (e) {
@@ -399,15 +427,15 @@ apiRouter.post("/studio/music", async (req, res) => {
       compositionPlan?: any;
     };
 
-    const prompt = body.prompt?.trim();
-    if (!prompt) {
-      res.status(400).json({ error: "Prompt (with lyrics) is required for full song generation" });
+    const prompt = body.prompt?.trim() ?? "";
+    if (!prompt && !body.compositionPlan) {
+      res.status(400).json({ error: "Prompt or composition plan is required for full song generation" });
       return;
     }
 
-    const result = await composeMusic(prompt || '', {
+    const result = await composeMusic(prompt, {
       modelId: body.modelId,
-      musicLengthMs: body.musicLengthMs,
+      musicLengthMs: body.compositionPlan ? undefined : body.musicLengthMs,
       forceInstrumental: body.forceInstrumental,
       compositionPlan: body.compositionPlan,
     });

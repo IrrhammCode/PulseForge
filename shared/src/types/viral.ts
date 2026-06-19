@@ -181,6 +181,17 @@ export interface TimelineEdits {
   preferredVoiceId?: string;
   /** Per-clip custom audio attachments (e.g. AI-generated vocals attached to specific sections) */
   clipAudios?: Record<string, { attachedAt: string; source?: 'ai' | 'upload' }>;
+  /** ElevenLabs composition plan for section-level regen */
+  compositionPlan?: {
+    chunks: Array<{
+      text: string;
+      duration_ms?: number;
+      positive_styles?: string[];
+      negative_styles?: string[];
+      context_adherence?: "low" | "medium" | "high";
+    }>;
+  };
+  generationPrompt?: string;
   updatedAt: string;
 }
 

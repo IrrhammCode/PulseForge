@@ -11,9 +11,19 @@ import { Card, CardHeader } from "@/components/ui/Card";
 interface HookVoicePreviewProps {
   lyrics: LyricsSections;
   enabled?: boolean;
+  /** Syncs TTS voice picker hint into Music composition_plan vocal styles */
+  onVoiceHintChange?: (hint: string) => void;
 }
 
-export function HookVoicePreview({ lyrics, enabled = true }: HookVoicePreviewProps) {
+function voiceToHint(voice: ElevenLabsVoice): string {
+  const parts = [voice.name];
+  if (voice.labels?.gender) parts.push(voice.labels.gender);
+  if (voice.labels?.accent) parts.push(voice.labels.accent);
+  if (voice.labels?.age) parts.push(voice.labels.age);
+  return parts.join(" — ");
+}
+
+export function HookVoicePreview({ lyrics, enabled = true, onVoiceHintChange }: HookVoicePreviewProps) {
   const hookText = getHookPreviewText(lyrics);
   const [text, setText] = useState(hookText);
   const [loading, setLoading] = useState(false);
@@ -78,14 +88,17 @@ export function HookVoicePreview({ lyrics, enabled = true }: HookVoicePreviewPro
     };
   }, [audioUrl]);
 
-  // Persist selected voice for cross-tab / Produce usage
+  // Persist selected voice + sync hint for full-song generation
   useEffect(() => {
-    if (selectedVoiceId) {
-      try {
-        localStorage.setItem("pulseforge_last_voice_id", selectedVoiceId);
-      } catch {}
+    if (!selectedVoiceId) return;
+    try {
+      localStorage.setItem("pulseforge_last_voice_id", selectedVoiceId);
+    } catch {}
+    const voice = voices.find((v) => v.voice_id === selectedVoiceId);
+    if (voice && onVoiceHintChange) {
+      onVoiceHintChange(voiceToHint(voice));
     }
-  }, [selectedVoiceId]);
+  }, [selectedVoiceId, voices, onVoiceHintChange]);
 
   const handleGenerate = async () => {
     if (!text.trim()) return;

@@ -3,7 +3,7 @@ import { DEFAULT_STEMS, EMPTY_LYRICS } from "@/types/studio";
 import type { TimelineEdits } from "@/types/viral";
 
 /** Current persisted studio project schema (export bundles use the same version). */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export interface MigrateProjectsResult {
   projects: StudioProject[];
@@ -49,7 +49,7 @@ function normalizeAudio(audio: DemoAudioMeta): DemoAudioMeta {
 }
 
 function normalizeVersion(version: ProjectVersion): ProjectVersion {
-  const lyrics = version.lyrics ?? { ...EMPTY_LYRICS };
+  const lyrics = { ...EMPTY_LYRICS, ...(version.lyrics ?? {}) };
   const audio = version.audio ? normalizeAudio(version.audio) : version.audio;
   return { ...version, lyrics, audio };
 }
@@ -85,6 +85,15 @@ function migrateV2ToV3(projects: StudioProject[]): StudioProject[] {
   }));
 }
 
+/** v3 → v4: genre/mood tag arrays for mixable styles. */
+function migrateV3ToV4(projects: StudioProject[]): StudioProject[] {
+  return projects.map((project) => ({
+    ...project,
+    genreTags: project.genreTags?.length ? project.genreTags : project.genre ? [project.genre] : [],
+    moodTags: project.moodTags?.length ? project.moodTags : project.mood ? [project.mood] : [],
+  }));
+}
+
 /**
  * Normalize and migrate persisted projects on read.
  * Accepts legacy bare arrays or versioned envelopes.
@@ -108,6 +117,10 @@ export function migrateProjectsOnRead(raw: unknown): MigrateProjectsResult {
   if (version < 3) {
     projects = migrateV2ToV3(projects);
     version = 3;
+  }
+  if (version < 4) {
+    projects = migrateV3ToV4(projects);
+    version = 4;
   }
 
   return {

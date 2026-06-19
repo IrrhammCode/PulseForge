@@ -10,10 +10,12 @@ export interface WorkflowTransition {
 export type StudioTab = "write" | "produce" | "analyze" | "compare" | "launch";
 
 export interface LyricsSections {
+  intro: string;
   verse1: string;
   verse2: string;
   chorus: string;
   bridge: string;
+  outro: string;
   raw: string;
 }
 
@@ -100,12 +102,72 @@ export interface ProjectVersion {
   updatedAt: string;
 }
 
+/** Creative brief — keeps generated songs from feeling like generic AI demos. */
+export interface SongCreativeBrief {
+  story?: string;
+  emotionalArc?: string;
+  vocalCharacter?: string;
+  listenerMoment?: string;
+  productionNotes?: string;
+}
+
+/** Per-section instrumental / backing direction for ElevenLabs composition_plan chunks. */
+export interface SectionMusicDirection {
+  /** Backing bed e.g. "muted piano + vinyl crackle" */
+  backing?: string;
+  /** Lead melody instrument e.g. "soft synth arp" */
+  melody?: string;
+  /** Inline {cue} for ElevenLabs text field e.g. "guitar riff" */
+  inlineCues?: string;
+  /** Comma-separated styles to avoid in this section */
+  avoid?: string;
+  /** Intro/outro instrumental bed without lead vocals */
+  instrumental?: boolean;
+}
+
+/** Vocal performance direction for ElevenLabs composition_plan chunks. */
+export interface VocalDirection {
+  voiceType?: "female" | "male" | "androgynous" | "duet";
+  delivery?: "intimate" | "conversational" | "belt" | "soulful" | "raspy" | "airy";
+  /** Extra character e.g. "breathy alto, slight rasp on chorus" */
+  customCharacter?: string;
+  /** Hint from Hook Voice Preview picker e.g. "Rachel — warm female" */
+  preferredVoiceHint?: string;
+  /** Phonetic ad-libs (mmm), (yeah) in intro/chorus/outro */
+  adLibs?: boolean;
+  /** Comma-separated vocal traits to avoid */
+  avoid?: string;
+}
+
+/** Backing, harmony, and stem pipeline for full-song generation. */
+export interface MusicArrangement {
+  instruments?: string[];
+  accompaniment?: string;
+  harmony?: string;
+  musicalKey?: string;
+  negativeGlobal?: string[];
+  vocal?: VocalDirection;
+  sections?: Partial<
+    Record<"intro" | "verse1" | "chorus" | "verse2" | "bridge" | "outro", SectionMusicDirection>
+  >;
+  /** Post-generate stem separation: auto tries Eleven then LALAL */
+  stemEngine?: "auto" | "eleven" | "lalal";
+}
+
 export interface StudioProject {
   id: string;
   title: string;
   artistName: string;
+  /** Primary display label (first tag or joined summary). */
   genre: string;
   mood: string;
+  /** Mixable genre tags — e.g. ["Indie Pop", "Electronic"]. */
+  genreTags?: string[];
+  moodTags?: string[];
+  genreCustom?: string;
+  moodCustom?: string;
+  creativeBrief?: SongCreativeBrief;
+  musicArrangement?: MusicArrangement;
   bpmTarget?: number;
   status: StudioProjectStatus;
   versions: ProjectVersion[];
@@ -120,7 +182,15 @@ export interface CreateProjectInput {
   artistName: string;
   genre: string;
   mood: string;
+  genreTags?: string[];
+  moodTags?: string[];
+  genreCustom?: string;
+  moodCustom?: string;
+  creativeBrief?: SongCreativeBrief;
+  musicArrangement?: MusicArrangement;
   bpmTarget?: number;
+  /** When set, used as v1 lyrics instead of auto-generated starter text. */
+  initialLyrics?: LyricsSections;
 }
 
 export const STUDIO_TABS: { id: StudioTab; label: string; description: string }[] = [
@@ -151,10 +221,12 @@ export const PROJECT_STATUSES: Record<
 };
 
 export const EMPTY_LYRICS: LyricsSections = {
+  intro: "",
   verse1: "",
   verse2: "",
   chorus: "",
   bridge: "",
+  outro: "",
   raw: "",
 };
 
@@ -178,4 +250,52 @@ export const MOOD_OPTIONS = [
   "Romantic",
   "Chill",
   "Aggressive",
+  "Other",
 ] as const;
+
+/** Resolve genre tags including custom "Other" text. */
+export function resolveGenreLabels(
+  project: Pick<StudioProject, "genre" | "genreTags" | "genreCustom">
+): string[] {
+  const tags = project.genreTags?.length ? project.genreTags : project.genre ? [project.genre] : [];
+  return tags
+    .flatMap((tag) => {
+      if (tag === "Other" && project.genreCustom?.trim()) return [project.genreCustom.trim()];
+      if (tag === "Other") return [];
+      return [tag];
+    })
+    .filter(Boolean);
+}
+
+/** Resolve mood tags including custom "Other" text. */
+export function resolveMoodLabels(
+  project: Pick<StudioProject, "mood" | "moodTags" | "moodCustom">
+): string[] {
+  const tags = project.moodTags?.length ? project.moodTags : project.mood ? [project.mood] : [];
+  return tags
+    .flatMap((tag) => {
+      if (tag === "Other" && project.moodCustom?.trim()) return [project.moodCustom.trim()];
+      if (tag === "Other") return [];
+      return [tag];
+    })
+    .filter(Boolean);
+}
+
+/** Human-readable joined style label for headers. */
+export function formatStyleMix(labels: string[]): string {
+  return labels.length ? labels.join(" × ") : "";
+}
+
+export function primaryGenreLabel(
+  project: Pick<StudioProject, "genre" | "genreTags" | "genreCustom">
+): string {
+  const labels = resolveGenreLabels(project);
+  return formatStyleMix(labels) || project.genre || "Pop";
+}
+
+export function primaryMoodLabel(
+  project: Pick<StudioProject, "mood" | "moodTags" | "moodCustom">
+): string {
+  const labels = resolveMoodLabels(project);
+  return formatStyleMix(labels) || project.mood || "Energetic";
+}

@@ -8,10 +8,12 @@ import { analyzeLyrics } from "@/lib/scoring/lyrics-analyzer";
 import type { LyricsSections } from "@/types/studio";
 
 const sections: LyricsSections = {
+  intro: "",
   verse1: "Rain on the window cold and grey",
   verse2: "",
   chorus: "Feel the midnight pulse we never slow",
   bridge: "",
+  outro: "",
   raw: "",
 };
 
