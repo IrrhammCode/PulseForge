@@ -18,12 +18,32 @@ import {
   fetchLyricsAnalysis,
   fetchLyricsTranslation,
   fetchRichsync,
+  fetchMxmVideoSync,
+  fetchWhisperLyricAlign,
   searchTracks,
+  fetchCatalogSimilar,
+  translateProjectLyrics,
   ApiError,
 } from "@/lib/api-client";
 import { composeLyricsBody, hasLyricsContent } from "@/lib/studio/lyrics";
 import type { LyricsSections, StudioProject } from "@/types/studio";
 import { cn } from "@/lib/utils";
+import { resolveProjectAnalysis } from "@pulseforge/shared/lib/musixmatch/project-lyrics-intelligence";
+import {
+  buildLyricVideoTimedLines,
+  richsyncMatchesProjectLyrics,
+  type TimedLyricLine,
+} from "@pulseforge/shared/lib/musixmatch/lyric-video-timing";
+import {
+  alignTimedLinesToVocalOnsets,
+  resolveDisplayLineAt,
+  type VocalActivityProfile,
+} from "@pulseforge/shared/lib/musixmatch/vocal-gap-sync";
+import { resolveMxmStrictDisplay } from "@pulseforge/shared/lib/musixmatch/mxm-video-sync";
+import { buildTimedLinesFromVocalPhrases } from "@pulseforge/shared/lib/musixmatch/audio-vocal-sync";
+import { collectProjectLinesWithSections } from "@pulseforge/shared/lib/musixmatch/sync-quality";
+import { analyzeMixVocalActivity } from "@/lib/studio/vocal-activity";
+import { translationLanguageLabel } from "@pulseforge/shared/lib/musixmatch/translate-lyrics";
 
 interface MxmProToolsProps {
   project: StudioProject;
@@ -38,6 +58,10 @@ interface MxmProToolsProps {
 }
 
 type ToolKey = "lyrics" | "analysis" | "catalog" | "translation" | "video";
+
+function normalizeForMatch(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
+}
 
 export function MusixmatchProTools({
   project,
@@ -55,12 +79,13 @@ export function MusixmatchProTools({
   const [toolData, setToolData] = useState<any>(null);
   const [toolError, setToolError] = useState<string | null>(null);
 
-  const [transLang, setTransLang] = useState("en");
+  const [transLang, setTransLang] = useState("id");
   const [enrichedRef, setEnrichedRef] = useState<any>(null); // selected MXM reference track + data
 
   // Video MXM data (richsync for accurate timing, analysis for visuals)
   const [videoRichsync, setVideoRichsync] = useState<any>(null);
   const [videoMxmAnalysis, setVideoMxmAnalysis] = useState<any>(null);
+  const [mxmSyncSource, setMxmSyncSource] = useState<string | null>(null);
 
   // Track if we have started a preview for auto-refresh
   const [previewStarted, setPreviewStarted] = useState(false);
@@ -76,11 +101,20 @@ export function MusixmatchProTools({
   const [videoStyle, setVideoStyle] = useState<'energetic' | 'minimal' | 'dark'>('energetic');
   const [videoRes, setVideoRes] = useState<720 | 1080>(720);
   const [karaokeMode, setKaraokeMode] = useState<'auto' | 'precise' | 'word'>('auto'); // auto prefers richsync chars per MXM docs
+  /** Positive = delay lyrics vs audio (fixes highlight racing ahead). */
+  const [syncOffsetSec, setSyncOffsetSec] = useState(0);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoAnimRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const vocalActivityRef = useRef<VocalActivityProfile | null>(null);
+  const syncCacheRef = useRef<{
+    lines: TimedLyricLine[];
+    source: string;
+    useStrict: boolean;
+    richsync?: any;
+  } | null>(null);
 
   // Shared stop to prevent multiple audio instances playing at once
   const stopCurrentPreview = useCallback(() => {
@@ -148,13 +182,15 @@ export function MusixmatchProTools({
         return;
       }
 
-      // Pick best or show picker
-      const pick = results[0]; // auto pick top
+      // Pick best match — prefer tracks with MXM richsync/subtitle sync
+      const pick =
+        results.find((r: { hasRichsync?: boolean }) => r.hasRichsync) ?? results[0];
       const trackId = Number(pick.id);
+      const commontrackId = pick.commontrackId ? Number(pick.commontrackId) : undefined;
 
       const [mxmLyrics, mxmAnalysis] = await Promise.all([
         fetchLyrics(trackId).catch(() => null),
-        fetchLyricsAnalysis(trackId).catch(() => null),
+        fetchLyricsAnalysis(trackId, commontrackId).catch(() => null),
       ]);
 
       const ref = {
@@ -165,17 +201,21 @@ export function MusixmatchProTools({
 
       setEnrichedRef(ref);
 
-      // Auto open analysis or catalog with the new data
+      const resolved = resolveProjectAnalysis(lyrics, ref.analysis);
+
+      // Auto open analysis with merged local + MXM data
       setActiveTool("analysis");
       setToolData({
-        source: "mxm-enriched",
+        source: resolved.source,
         reference: ref.track,
         project: {
           title: project.title,
           artist: project.artistName,
           genre: project.genre,
           mood: project.mood,
+          bpm: project.bpmTarget,
         },
+        local: resolved,
         mxm: ref.analysis,
         mxmLyrics: ref.lyrics,
       });
@@ -198,11 +238,11 @@ export function MusixmatchProTools({
 
   // Apply MXM analysis data to creative brief / tags (helpful small feature)
   const applyMxmToBrief = () => {
-    const mxm = toolData?.mxm || enrichedRef?.analysis;
+    const mxm = toolData?.local?.analysis || toolData?.mxm || enrichedRef?.analysis;
     const refTrack = enrichedRef?.track || toolData?.reference;
 
     if (!mxm) {
-      setToolError("No MXM analysis loaded yet. Click Match & Enrich first.");
+      setToolError("No analysis loaded yet. Open Analysis or click Match & Enrich.");
       return;
     }
 
@@ -241,6 +281,9 @@ export function MusixmatchProTools({
     setToolLoading(true);
 
     const currentMxmId = enrichedRef?.track?.id ? Number(enrichedRef.track.id) : (initialMxmId ? Number(initialMxmId) : null);
+    const currentCommontrackId = enrichedRef?.track?.commontrackId
+      ? Number(enrichedRef.track.commontrackId)
+      : undefined;
 
     try {
       if (tool === "lyrics") {
@@ -252,15 +295,14 @@ export function MusixmatchProTools({
         if (enrichedRef?.lyrics) (base as any).mxm = { lyrics: enrichedRef.lyrics };
         setToolData(base);
       } else if (tool === "analysis") {
-        let mxmA = null;
-        if (currentMxmId) {
-          const res = await fetchLyricsAnalysis(currentMxmId).catch(() => null);
-          mxmA = res?.analysis ?? null;
+        let mxmRemote = enrichedRef?.analysis ?? null;
+        if (currentMxmId && !mxmRemote) {
+          const res = await fetchLyricsAnalysis(currentMxmId, currentCommontrackId).catch(() => null);
+          mxmRemote = res?.analysis ?? null;
         }
-        if (enrichedRef?.analysis) mxmA = enrichedRef.analysis;
-
+        const resolved = resolveProjectAnalysis(lyrics, mxmRemote);
         setToolData({
-          source: mxmA ? "mxm" : "project",
+          source: resolved.source,
           project: {
             title: project.title,
             artist: project.artistName,
@@ -268,25 +310,42 @@ export function MusixmatchProTools({
             mood: project.mood,
             bpm: project.bpmTarget,
           },
-          mxm: mxmA,
+          local: resolved,
+          mxm: mxmRemote,
           reference: enrichedRef?.track || null,
-          note: mxmA ? "Real data from Musixmatch Analysis API" : "Local project signals + brief",
+          note:
+            resolved.source === "local"
+              ? "Local lyrics intelligence (original project). Match & Enrich for live MXM catalog analysis."
+              : "Merged project + Musixmatch Analysis API",
         });
       } else if (tool === "catalog") {
+        const resolved = resolveProjectAnalysis(lyrics, enrichedRef?.analysis ?? null);
         let similar: any[] = [];
+        let titleMatches: any[] = [];
         try {
           const q = `${project.title} ${project.artistName}`.trim();
-          if (q) similar = await searchTracks(q);
+          if (q) titleMatches = await searchTracks(q);
+        } catch {}
+        try {
+          const catalogRes = await fetchCatalogSimilar({
+            analysis: resolved.analysis,
+            genre: project.genre,
+            title: project.title,
+          });
+          similar = catalogRes?.similar ?? [];
         } catch {}
         setToolData({
           projectMeta: {
             title: project.title,
             artistName: project.artistName,
+            genre: project.genre,
             genreTags: project.genreTags,
             moodTags: project.moodTags,
             bpmTarget: project.bpmTarget,
           },
-          mxmSimilar: similar.slice(0, 5),
+          analysisSource: resolved.source,
+          similar,
+          titleMatches: titleMatches.slice(0, 5),
           enriched: enrichedRef,
         });
       } else if (tool === "translation") {
@@ -342,12 +401,17 @@ export function MusixmatchProTools({
 
     try {
       const refId = enrichedRef?.track?.id ? Number(enrichedRef.track.id) : (initialMxmId ? Number(initialMxmId) : null);
+      const commontrackId = enrichedRef?.track?.commontrackId
+        ? Number(enrichedRef.track.commontrackId)
+        : undefined;
 
-      if (refId) {
-        const res = await fetchLyricsTranslation(refId, transLang).catch(() => null);
-        const translatedBody = res?.translation?.lyrics_translated?.lyrics_body;
+      if (refId && transLang !== "en") {
+        const res = await fetchLyricsTranslation(refId, transLang, commontrackId).catch(() => null);
+        const translatedBody =
+          res?.translatedBody ??
+          res?.translation?.lyrics_translated?.lyrics_body;
 
-        if (translatedBody) {
+        if (translatedBody && normalizeForMatch(translatedBody) !== normalizeForMatch(data.original)) {
           setToolData({
             ...data,
             translated: translatedBody,
@@ -358,15 +422,21 @@ export function MusixmatchProTools({
         }
       }
 
-      // Fallback
+      // Groq fallback for original projects (or when MXM has no translation)
+      const groqRes = await translateProjectLyrics({
+        text: data.original,
+        targetLang: transLang,
+        sourceLang: "en",
+      });
+
       setToolData({
         ...data,
-        translated: `(MXM real translation requires a matched catalog track.)\n\n${data.original}`,
+        translated: groqRes.translated,
         translatedLang: transLang,
-        source: "fallback",
+        source: groqRes.source,
       });
-    } catch (e) {
-      setToolError("Could not fetch translation.");
+    } catch (e: any) {
+      setToolError(e?.message || "Could not fetch translation. Set GROQ_API_KEY for AI translation.");
     } finally {
       setToolLoading(false);
     }
@@ -431,11 +501,130 @@ export function MusixmatchProTools({
     setScenePrompts(prompts);
   };
 
-  // Main "Preview" handler that behaves like calling MXM Pro API:
-  // 1. Show loading
-  // 2. Fetch real MXM data (richsync + analysis) if available
-  // 3. "Process" / prepare
-  // 4. Then reveal + start the video preview
+  const getAudioBlobForSync = useCallback(async (): Promise<Blob | null> => {
+    if (mixBlob) return mixBlob;
+    if (audioUrl) {
+      try {
+        const res = await fetch(audioUrl);
+        return await res.blob();
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [mixBlob, audioUrl]);
+
+  const resolveVideoSyncPipeline = useCallback(
+    async (durationSec: number, audioBlob: Blob | null) => {
+      const currentMxmId = enrichedRef?.track?.id
+        ? Number(enrichedRef.track.id)
+        : initialMxmId
+          ? Number(initialMxmId)
+          : null;
+      const currentCommontrackId = enrichedRef?.track?.commontrackId
+        ? Number(enrichedRef.track.commontrackId)
+        : undefined;
+
+      // 1) MXM Pro — only when catalog lyrics actually match project
+      if (currentMxmId || (project.title && project.artistName)) {
+        try {
+          const mxmSync = await fetchMxmVideoSync({
+            durationSec,
+            trackId: currentMxmId ?? undefined,
+            commontrackId: currentCommontrackId,
+            title: project.title,
+            artist: project.artistName,
+            lyrics,
+            maxDeviationSec: 5,
+          });
+          if (mxmSync?.lines?.length) {
+            return {
+              lines: mxmSync.lines,
+              source: mxmSync.source,
+              useStrict: true,
+              richsync: mxmSync.richsync,
+            };
+          }
+        } catch {
+          /* try next */
+        }
+      }
+
+      // 2) Groq Whisper forced-align — listens to actual vocals in the mix
+      if (audioBlob) {
+        try {
+          const whisper = await fetchWhisperLyricAlign(audioBlob, lyrics, syncOffsetSec);
+          if (whisper?.lines?.length) {
+            return {
+              lines: whisper.lines,
+              source: whisper.source,
+              useStrict: true,
+            };
+          }
+        } catch {
+          /* try next */
+        }
+      }
+
+      // 3) Vocal phrase detection from mix waveform (no API)
+      try {
+        const analysisSource = audioBlob ?? mixBlob ?? audioUrl;
+        if (analysisSource) {
+          const profile = await analyzeMixVocalActivity(analysisSource);
+          vocalActivityRef.current = profile;
+          const projectLines = collectProjectLinesWithSections(lyrics);
+          const vocalLines = buildTimedLinesFromVocalPhrases(
+            projectLines,
+            profile,
+            durationSec,
+            syncOffsetSec
+          );
+          if (vocalLines.length >= Math.ceil(projectLines.length * 0.45)) {
+            return {
+              lines: vocalLines,
+              source: "audio.vocal-phrases",
+              useStrict: true,
+            };
+          }
+        }
+      } catch {
+        vocalActivityRef.current = null;
+      }
+
+      // 4) Section timing (last resort)
+      const richsyncForTiming =
+        effectiveRichsync && richsyncMatchesProjectLyrics(effectiveRichsync, lyrics)
+          ? effectiveRichsync
+          : null;
+      const fallback = buildLyricVideoTimedLines(lyrics, durationSec, {
+        bpm: project.bpmTarget,
+        richsync: richsyncForTiming,
+        syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
+        durationStretch: 1.14,
+      });
+
+      return {
+        lines: fallback,
+        source: "section.timing",
+        useStrict: false,
+      };
+    },
+    [
+      enrichedRef,
+      initialMxmId,
+      project.title,
+      project.artistName,
+      project.bpmTarget,
+      lyrics,
+      syncOffsetSec,
+      karaokeMode,
+      effectiveRichsync,
+      mixBlob,
+      audioUrl,
+    ]
+  );
+
+  // Main "Preview" handler
   const handlePreviewClick = async () => {
     if (!audioUrl && !mixBlob) {
       setToolError("Please provide audio (upload mix or generate full song) first.");
@@ -445,44 +634,53 @@ export function MusixmatchProTools({
     setIsVideoGenerating(true);
     setVideoPreviewReady(false);
     setToolError(null);
+    setMxmSyncSource(null);
+    syncCacheRef.current = null;
 
-    const currentMxmId = enrichedRef?.track?.id
-      ? Number(enrichedRef.track.id)
-      : (initialMxmId ? Number(initialMxmId) : null);
+    try {
+      const audioBlob = await getAudioBlobForSync();
+      const durHint = await (async () => {
+        const src = audioUrl || (audioBlob ? URL.createObjectURL(audioBlob) : null);
+        if (!src) return (project as { durationSec?: number }).durationSec || 120;
+        const probe = new Audio(src);
+        await new Promise<void>((resolve) => {
+          if (probe.duration && isFinite(probe.duration) && probe.duration > 5) {
+            resolve();
+            return;
+          }
+          probe.addEventListener("loadedmetadata", () => resolve(), { once: true });
+          probe.load();
+          setTimeout(resolve, 900);
+        });
+        const d = probe.duration;
+        if (audioBlob && !audioUrl) URL.revokeObjectURL(probe.src);
+        return isFinite(d) && d > 5 ? d : (project as { durationSec?: number }).durationSec || 120;
+      })();
 
-    // Step 1: Make sure we talk to real MXM Pro endpoints if we have a track id
-    if (currentMxmId) {
-      try {
-        // Fetch richsync + analysis for accurate timing + style (real API calls)
-        // Pass duration so MXM returns richsync tuned for our track length (per docs)
-        const durHint = (project as any).durationSec || 120;
-        const [rs, an] = await Promise.all([
-          !effectiveRichsync && !videoRichsync
-            ? fetchRichsync(currentMxmId, durHint).catch(() => null)
-            : Promise.resolve(null),
-          !effectiveAnalysis && !videoMxmAnalysis && !enrichedRef?.analysis
-            ? fetchLyricsAnalysis(currentMxmId).catch(() => null)
-            : Promise.resolve(null),
-        ]);
+      const sync = await resolveVideoSyncPipeline(durHint, audioBlob);
+      syncCacheRef.current = sync;
+      setMxmSyncSource(sync.source);
+      if (sync.richsync) setVideoRichsync(sync.richsync);
 
-        if (rs?.richsync && !videoRichsync) setVideoRichsync(rs.richsync);
+      const currentMxmId = enrichedRef?.track?.id
+        ? Number(enrichedRef.track.id)
+        : initialMxmId
+          ? Number(initialMxmId)
+          : null;
+      const currentCommontrackId = enrichedRef?.track?.commontrackId
+        ? Number(enrichedRef.track.commontrackId)
+        : undefined;
+
+      if (currentMxmId && !effectiveAnalysis && !videoMxmAnalysis && !enrichedRef?.analysis) {
+        const an = await fetchLyricsAnalysis(currentMxmId, currentCommontrackId).catch(() => null);
         if (an?.analysis && !videoMxmAnalysis) setVideoMxmAnalysis(an.analysis);
-      } catch (e) {
-        // non-fatal, we still proceed with whatever we have
       }
-    } else if (!enrichedRef && !hasContent) {
-      // Only auto-enrich for catalog reference when project itself has no usable lyrics yet.
-      // For AI-generated original projects we want the video to show *our* lyrics, not a random MXM match's.
-      try {
-        await runMatchEnrich();
-      } catch {}
+    } catch {
+      /* preview still runs with fallback */
     }
 
-    // Step 2: "MXM Pro is rendering the lyric video" — give it a realistic processing feel
-    // (even though most work is client canvas, the data loading above is the real MXM API part)
-    await new Promise((resolve) => setTimeout(resolve, 650 + Math.random() * 500));
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
-    // Step 3: Now start the actual preview (canvas + audio)
     stopCurrentPreview();
     startVideoPreview();
 
@@ -492,9 +690,7 @@ export function MusixmatchProTools({
 
 
 
-  const startVideoPreview = (providedAudio?: HTMLAudioElement) => {
-    const normalizeForMatch = (s: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
-
+  const startVideoPreview = async (providedAudio?: HTMLAudioElement) => {
     // Always stop previous instance first (prevents double/triple playback)
     stopCurrentPreview();
 
@@ -522,70 +718,113 @@ export function MusixmatchProTools({
     }
     audioElRef.current = audio;
 
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-
-    // Build timed lyrics prioritizing MXM richsync *timing* (as recommended in their docs for precise video sync)
-    // but ALWAYS using our project's lyrics text (for original/AI songs).
-    // This gives us MXM-accurate placement without pulling wrong catalog lyrics.
-    const body = composeLyricsBody(lyrics);
-    let lines = body
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l && !/^\[.*\]$/.test(l));
-
-    const rs = effectiveRichsync;
-    let timedLines: { text: string; start: number; end: number }[] = [];
-
-    const targetTotal = Math.max(
-      rs?.durationSec || (project as any).durationSec || 120,
-      120
-    );
-
-    if (rs?.segments && Array.isArray(rs.segments) && rs.segments.length > 0) {
-      // Use richsync timing skeleton (ts/te) for precise positions (MXM style)
-      // Map our lines to the richsync time windows (by index proportion)
-      const rsTimes = rs.segments.map((s: any) => ({
-        start: s.startSec ?? 0,
-        end: s.endSec ?? (s.startSec ?? 0) + 3,
-      }));
-
-      if (lines.length === 0) lines = rs.segments.map((s: any) => s.text || "");
-
-      lines.forEach((text, i) => {
-        // Distribute our lines across the richsync time points
-        const idx = Math.min(Math.floor((i / Math.max(1, lines.length - 1)) * (rsTimes.length - 1)), rsTimes.length - 1);
-        const t0 = rsTimes[idx]?.start ?? (i * 3);
-        const t1 = rsTimes[idx]?.end ?? (t0 + 4);
-        // slight interpolation for more lines than segments
-        const progress = lines.length > 1 ? i / (lines.length - 1) : 0;
-        const start = t0 + (t1 - t0) * progress * 0.6;
-        const end = start + Math.max(1.8, (t1 - t0) * 0.8);
-        timedLines.push({ text, start, end });
+    // Load metadata BEFORE play so timing grid matches real duration
+    if (!providedAudio) {
+      await new Promise<void>((resolve) => {
+        if (audio.duration && isFinite(audio.duration) && audio.duration > 10) {
+          resolve();
+          return;
+        }
+        const handler = () => {
+          audio.removeEventListener("loadedmetadata", handler);
+          resolve();
+        };
+        audio.addEventListener("loadedmetadata", handler, { once: true });
+        audio.load();
+        setTimeout(resolve, 900);
       });
+    }
+
+    let targetTotal = 120;
+    if (audio.duration && isFinite(audio.duration) && audio.duration > 10) {
+      targetTotal = audio.duration;
     } else {
-      // Fallback: improved proportional timing for originals (no richsync)
-      let t = 2.5;
-      lines.forEach((line, li) => {
-        const dur = Math.max(3.8, 6.0 - Math.min(li * 0.15, 2.5));
-        timedLines.push({ text: line, start: t, end: t + dur });
-        t += dur;
-      });
+      targetTotal = Math.max(effectiveRichsync?.durationSec || (project as { durationSec?: number }).durationSec || 120, 120);
+    }
 
-      const rawEnd = Math.max(t, 30);
-      const scale = targetTotal / rawEnd;
-      timedLines = timedLines.map((ln) => ({
-        text: ln.text,
-        start: ln.start * scale,
-        end: Math.min(ln.end * scale, targetTotal - 1),
+    let useMxmStrict = false;
+    let timedLines: TimedLyricLine[] = [];
+    let activeSyncSource = mxmSyncSource;
+
+    if (syncCacheRef.current?.lines?.length) {
+      timedLines = syncCacheRef.current.lines;
+      useMxmStrict = syncCacheRef.current.useStrict;
+      activeSyncSource = syncCacheRef.current.source;
+    } else {
+      try {
+        const audioBlob = await getAudioBlobForSync();
+        const sync = await resolveVideoSyncPipeline(targetTotal, audioBlob);
+        syncCacheRef.current = sync;
+        timedLines = sync.lines;
+        useMxmStrict = sync.useStrict;
+        activeSyncSource = sync.source;
+        if (sync.source !== mxmSyncSource) setMxmSyncSource(sync.source);
+        if (sync.richsync) setVideoRichsync(sync.richsync);
+      } catch {
+        /* fallback below */
+      }
+    }
+
+    if (timedLines.length === 0) {
+      const richsyncForTiming =
+        effectiveRichsync && richsyncMatchesProjectLyrics(effectiveRichsync, lyrics)
+          ? effectiveRichsync
+          : null;
+
+      timedLines = buildLyricVideoTimedLines(lyrics, targetTotal, {
+        bpm: project.bpmTarget,
+        richsync: richsyncForTiming,
+        syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
+        durationStretch: 1.14,
+      });
+    }
+
+    if (timedLines.length === 0) {
+      const body = composeLyricsBody(lyrics);
+      const lines = body
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l && !/^\[.*\]$/.test(l));
+      timedLines = lines.map((text, i) => ({
+        text,
+        start: 2.5 + syncOffsetSec + i * 3.2,
+        end: 2.5 + syncOffsetSec + (i + 1) * 3.2,
       }));
     }
 
-    // Use scaled lyrics end or audio duration for accurate progress + drawing lifetime
-    const computedVideoTotal = timedLines.length
-      ? Math.max(timedLines[timedLines.length - 1].end + 3, targetTotal)
-      : targetTotal;
-    const total = effectiveRichsync?.durationSec || (project as any).durationSec || computedVideoTotal || 120;
+    // Client vocal detection only when MXM sync unavailable
+    let vocalProfile: VocalActivityProfile | null = null;
+    if (!useMxmStrict) {
+      try {
+        const analysisSource = mixBlob ?? audioUrl;
+        if (analysisSource) {
+          vocalProfile = await analyzeMixVocalActivity(analysisSource);
+          vocalActivityRef.current = vocalProfile;
+          timedLines = alignTimedLinesToVocalOnsets(timedLines, vocalProfile);
+        }
+      } catch {
+        vocalActivityRef.current = null;
+      }
+    } else {
+      vocalActivityRef.current = null;
+    }
+
+    // Start audio + canvas on the same beat (avoids lyrics ahead of buffered audio)
+    audio.currentTime = 0;
+    await new Promise<void>((resolve) => {
+      const done = () => resolve();
+      audio.addEventListener("playing", done, { once: true });
+      void audio.play().catch(done);
+      setTimeout(done, 280);
+    });
+
+    // Use actual audio duration when available for accurate progress bar
+    let total = effectiveRichsync?.durationSec || (project as any).durationSec || 120;
+    if (audio && audio.duration && isFinite(audio.duration) && audio.duration > 5) {
+      total = audio.duration;
+    } else if (timedLines.length) {
+      total = Math.max(total, timedLines[timedLines.length - 1].end + 2);
+    }
     const colors = getStyleColors(videoStyle);
 
     const draw = () => {
@@ -649,38 +888,39 @@ export function MusixmatchProTools({
       ctx.fillStyle = pulseGrad;
       ctx.fillRect(0, 0, w, h);
 
-      // === Lyric display ===
-      // Text from project lyrics.
-      // When richsync available we use its precise ts/te timing grid (MXM docs style for video sync).
-      // Otherwise proportional fallback tuned for full tracks.
+      // === Lyric display (MXM strict segment timing or vocal-aware fallback) ===
+      const syncT = t - syncOffsetSec;
+      const display = useMxmStrict
+        ? resolveMxmStrictDisplay(syncT, timedLines)
+        : resolveDisplayLineAt(t, timedLines, vocalProfile);
+      const ht = display.highlightTime;
+      const activeTimedLine = display.line;
       let activeLineInfo: { text: string; start: number; end: number; progress: number } | null = null;
       const upcomingLines: string[] = [];
-      for (let i = 0; i < timedLines.length; i++) {
-        const ln = timedLines[i];
-        if (t >= ln.start - 0.2 && t <= ln.end + 0.8) {
-          if (!activeLineInfo) {
-            const segDur = Math.max(0.8, ln.end - ln.start);
-            const segProg = Math.max(0, Math.min(1, (t - ln.start) / segDur));
-            activeLineInfo = { text: ln.text, start: ln.start, end: ln.end, progress: segProg };
-          } else {
-            upcomingLines.push(ln.text);
-          }
-          if (upcomingLines.length >= 3) break;
-        }
-        if (t < ln.start && upcomingLines.length < 2) {
-          upcomingLines.push(ln.text);
+      const inInstrumentalGap = useMxmStrict
+        ? (display as ReturnType<typeof resolveMxmStrictDisplay>).inGap
+        : display.paused && !display.line;
+
+      if (activeTimedLine) {
+        const segDur = Math.max(0.8, activeTimedLine.end - activeTimedLine.start);
+        const segProg = Math.max(0, Math.min(1, (ht - activeTimedLine.start) / segDur));
+        activeLineInfo = {
+          text: activeTimedLine.text,
+          start: activeTimedLine.start,
+          end: activeTimedLine.end,
+          progress: segProg,
+        };
+
+        const idx = display.lineIndex;
+        for (let i = idx + 1; i < timedLines.length && upcomingLines.length < 2; i++) {
+          const next = timedLines[i]!;
+          if (inInstrumentalGap && syncT < next.start) break;
+          if (!inInstrumentalGap && display.paused && t < next.start) break;
+          upcomingLines.push(next.text);
         }
       }
 
-      // Section label derived from our project timedLines (never from MXM rs to avoid off-song labels)
-      let sectionLabel = "";
-      for (let i = 0; i < timedLines.length; i++) {
-        if (t >= timedLines[i].start - 0.2 && t <= timedLines[i].end + 0.8) {
-          // crude: map back to a section name from the original order we built
-          sectionLabel = (["INTRO","VERSE 1","CHORUS","VERSE 2","BRIDGE","OUTRO"][Math.floor(i / 3)] || "").slice(0, 12);
-          break;
-        }
-      }
+      const sectionLabel = activeTimedLine?.section ?? "";
 
       ctx.font = `600 ${videoRes === 1080 ? 26 : 20}px system-ui, sans-serif`;
       ctx.fillStyle = colors.accent;
@@ -699,29 +939,29 @@ export function MusixmatchProTools({
       }
 
       if (activeLineInfo) {
-        // Try to use precise richsync char-level data for real MXM-style karaoke if available
-        const rsSeg = effectiveRichsync?.segments?.find((s: any) =>
-          normalizeForMatch(s.text) === normalizeForMatch(activeLineInfo.text)
-        );
+        const rsSeg = activeTimedLine?.richsyncSegment;
         const hasPreciseChars = rsSeg?.chars && Array.isArray(rsSeg.chars) && rsSeg.chars.length > 0;
-        const usePrecise = (karaokeMode === 'auto' || karaokeMode === 'precise') && hasPreciseChars;
+        const usePrecise =
+          (karaokeMode === "auto" || karaokeMode === "precise") &&
+          hasPreciseChars &&
+          !inInstrumentalGap &&
+          !display.paused;
 
-        if (usePrecise) {
-          // Precise per-character highlighting using MXM richsync offsets
-          const chars = rsSeg.chars as Array<{ char: string; offset: number }>;
-          const lineStart = activeLineInfo.start;
-          const lineEnd = activeLineInfo.end;
-          const lineDur = Math.max(0.1, lineEnd - lineStart);
+        if (usePrecise && rsSeg?.chars) {
+          const chars = rsSeg.chars;
+          const lineStart = rsSeg.startSec;
 
           let x = 70;
           chars.forEach((ch, ci) => {
             const char = ch.char;
-            const relOffset = typeof ch.offset === 'number' ? ch.offset : (ci / Math.max(1, chars.length - 1)) * lineDur;
+            const relOffset = typeof ch.offset === "number" ? ch.offset : (ci / Math.max(1, chars.length - 1)) * (rsSeg.endSec - rsSeg.startSec);
             const charStart = lineStart + relOffset;
-            const nextOffset = chars[ci + 1]?.offset ?? lineDur;
+            const nextOffset =
+              chars[ci + 1]?.offset ??
+              rsSeg.endSec - rsSeg.startSec;
             const charDur = Math.max(0.05, nextOffset - relOffset);
-            const charProg = Math.max(0, Math.min(1, (t - charStart) / charDur));
-            const isActive = t >= charStart - 0.05 && t <= charStart + charDur + 0.1;
+            const charProg = Math.max(0, Math.min(1, (ht - charStart) / charDur));
+            const isActive = ht >= charStart - 0.04 && ht <= charStart + charDur + 0.08;
 
             const w = ctx.measureText(char).width;
 
@@ -739,7 +979,7 @@ export function MusixmatchProTools({
               ctx.fillRect(x, uy, w, 2);
               ctx.fillStyle = colors.accent;
               ctx.fillRect(x, uy, w * Math.max(0, charProg), 2);
-            } else if (t > charStart + charDur) {
+            } else if (ht > charStart + charDur) {
               ctx.fillStyle = "rgba(250,250,250,0.95)";
               ctx.fillText(char, x, yCurrent);
             } else {
@@ -767,10 +1007,11 @@ export function MusixmatchProTools({
             const trimmed = word.trim();
 
             if (!isSpace && trimmed) {
-              const thisWordStart = wordStartT;
-              const thisWordEnd = wordStartT + wordDur;
-              const wordProg = Math.max(0, Math.min(1, (t - thisWordStart) / wordDur));
-              const isActiveWord = t >= thisWordStart - 0.08 && t <= thisWordEnd + 0.15;
+              const wordLag = 0.18;
+              const thisWordStart = wordStartT + wordLag;
+              const thisWordEnd = wordStartT + wordDur + wordLag;
+              const wordProg = Math.max(0, Math.min(1, (ht - thisWordStart) / wordDur));
+              const isActiveWord = !display.paused && ht >= thisWordStart - 0.04 && ht <= thisWordEnd + 0.08;
 
               if (isActiveWord) {
                 ctx.fillStyle = colors.accent;
@@ -785,7 +1026,7 @@ export function MusixmatchProTools({
                 ctx.fillRect(x, uy, w, 3);
                 ctx.fillStyle = colors.accent;
                 ctx.fillRect(x, uy, w * Math.max(0.1, wordProg), 3);
-              } else if (t > thisWordEnd) {
+              } else if (ht > thisWordEnd) {
                 ctx.fillStyle = "rgba(250,250,250,0.95)";
                 ctx.fillText(word, x, yCurrent);
               } else {
@@ -800,8 +1041,8 @@ export function MusixmatchProTools({
             x += w;
           });
         }
-      } else {
-        // Fallback
+      } else if (!inInstrumentalGap) {
+        // Fallback when no active line and not in MXM gap
         ctx.fillStyle = colors.text;
         const fallback = timedLines.length > 0 ? timedLines[0].text : "";
         ctx.fillText(fallback, 70, yCurrent);
@@ -817,9 +1058,24 @@ export function MusixmatchProTools({
 
       ctx.font = "400 16px system-ui, sans-serif";
       ctx.fillStyle = "#3f3f46";
-      const mxmBadge = effectiveRichsync ? "MXM richsync (precise timing)" : (enrichedRef ? "Enriched (style)" : "Project lyrics");
       const analysisBadge = effectiveAnalysis ? " + analysis" : "";
-      ctx.fillText(`Musixmatch Pro style • ${videoStyle} • ${mxmBadge}${analysisBadge}`, 70, h - 50);
+      const mxmBadge = activeSyncSource
+        ? `MXM ${activeSyncSource.replace(/^mxm\./, "").replace(/\+project$/, " + project")}`
+        : useMxmStrict
+          ? "MXM sync"
+          : "Section timing (fallback)";
+      const vocalBadge = vocalProfile && !useMxmStrict ? " · vocal-aware pause" : "";
+      ctx.fillText(`Musixmatch Pro style • ${videoStyle} • ${mxmBadge}${vocalBadge}${analysisBadge}`, 70, h - 50);
+
+      if (inInstrumentalGap) {
+        ctx.font = `500 ${videoRes === 1080 ? 28 : 22}px system-ui, sans-serif`;
+        ctx.fillStyle = "rgba(161,161,170,0.55)";
+        ctx.fillText("— instrumental —", 70, yCurrent);
+      } else if (display.paused && activeLineInfo) {
+        ctx.font = "400 12px system-ui, sans-serif";
+        ctx.fillStyle = "rgba(161,161,170,0.65)";
+        ctx.fillText("— instrumental —", 70, h - 28);
+      }
 
       // Subtle vignette for more cinematic / premium look
       const vig = ctx.createRadialGradient(w/2, h/2, Math.min(w, h) * 0.35, w/2, h/2, Math.max(w, h) * 0.72);
@@ -862,22 +1118,8 @@ export function MusixmatchProTools({
       audio.muted = false;
       audio.volume = 1;
 
-      // Start the preview animation using the SAME audio instance
-      // This ensures lyrics timing (based on audio.currentTime) matches the recorded audio perfectly
-      startVideoPreview(audio);
-
-      // Give the canvas a couple of frames to render before capturing stream
-      // (prevents "Export produced no data" in many browsers)
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-      // Now capture the stream (after drawing has started with the correct audio)
-      const canvasStream = canvas.captureStream(30);
-
-      let combined: MediaStream = canvasStream;
-
+      // Wait for metadata FIRST (before playing or capturing) to get accurate duration and ensure audio is ready
       let exportDurationMs = 120000;
-
-      // Best effort audio capture using the SAME audio that drives the animation
       try {
         await new Promise<void>((resolve, reject) => {
           audio.onloadedmetadata = () => {
@@ -889,7 +1131,42 @@ export function MusixmatchProTools({
           audio.onerror = () => reject(new Error("audio load fail"));
           audio.load();
         });
+      } catch (e) {
+        console.warn("Could not load audio metadata for export duration", e);
+      }
 
+      // Now start the preview (this will play the audio and start RAF drawing)
+      startVideoPreview(audio);
+
+      // Give the canvas several frames AFTER stream setup to ensure rendering has begun
+      // Critical for MediaRecorder to capture initial data
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      // Capture the stream AFTER drawing has started
+      const canvasStream = canvas.captureStream(30);
+
+      // Wait for several frames AFTER captureStream to ensure the canvas has rendered content
+      // This is critical — MediaRecorder often gets empty data if no frames were painted after capture
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      // Force a tiny draw operation after capture to ensure the stream has content
+      try {
+        const kickCtx = canvas.getContext('2d', { willReadFrequently: true });
+        if (kickCtx) {
+          kickCtx.fillStyle = 'rgba(255,255,255,0.01)';
+          kickCtx.fillRect(60, 60, 2, 2);
+        }
+      } catch {}
+      await new Promise((r) => requestAnimationFrame(r));
+
+      let combined: MediaStream = canvasStream;
+
+      // Best effort audio capture using the SAME audio that drives the animation
+      // (duration already captured above)
+      try {
         const audioCapture =
           typeof (audio as any).captureStream === "function"
             ? (audio as any).captureStream()
@@ -902,11 +1179,10 @@ export function MusixmatchProTools({
           ]);
         } else {
           // Fallback: at least play the audio in sync so user can screen record if needed
-          audio.play().catch(() => {});
+          // (already playing from startVideoPreview)
         }
       } catch (e) {
         console.warn("Audio capture limited — falling back to video track + playing audio", e);
-        audio.play().catch(() => {});
       }
 
       let recorder;
@@ -930,10 +1206,9 @@ export function MusixmatchProTools({
 
       recorder.onstop = () => {
         if (chunks.length === 0) {
-          setToolError("Export produced no data. Preview restarted — click Download Video again. If it keeps failing, use your browser's screen recorder as fallback.");
+          setToolError("Export produced no data. Click Preview again, then Download Video. If it keeps failing, use your browser's screen recorder as fallback.");
           setToolLoading(false);
-          // Resume the preview animation for the user so they can try again immediately
-          try { startVideoPreview(); } catch {}
+          // Do not auto-restart preview here to avoid extra audio playback
           return;
         }
         const blob = new Blob(chunks, { type: "video/webm" });
@@ -948,6 +1223,9 @@ export function MusixmatchProTools({
         setToolLoading(false);
       };
 
+      // Small delay to let the canvas stream stabilize after capture + draws
+      await new Promise(r => setTimeout(r, 120));
+
       // Start recording (with timeslice for regular chunks)
       recorder.start(1000);
 
@@ -955,7 +1233,7 @@ export function MusixmatchProTools({
       try { if (recorder.state === "recording") recorder.requestData(); } catch {}
       setTimeout(() => {
         try { if (recorder.state === "recording") recorder.requestData(); } catch {}
-      }, 200);
+      }, 250);
 
       // Audio is already playing from startVideoPreview (using the same instance)
       // No need to restart here to avoid desync
@@ -972,7 +1250,7 @@ export function MusixmatchProTools({
           try { audioElRef.current.pause(); } catch {}
         }
         if (videoAnimRef.current) cancelAnimationFrame(videoAnimRef.current);
-      }, exportDurationMs + 400); // small extra buffer so final frames + data are captured
+      }, exportDurationMs + 600); // extra buffer for final frames to be captured by recorder
     } catch (e) {
       setToolError("Export failed. Try the simple webm (visual) or download original MP3 + video separately.");
       setToolLoading(false);
@@ -1002,6 +1280,7 @@ export function MusixmatchProTools({
   // while the video panel is open. Ensures video always reflects the *current* project lyrics.
   useEffect(() => {
     if (activeTool !== "video") return;
+    syncCacheRef.current = null;
     const hasBetterData = !!(effectiveRichsync || effectiveAnalysis || enrichedRef);
     // Only auto-restart when preview is already running AND better data arrives (avoids double start on initial Preview click)
     const shouldRefresh = previewStarted && (audioUrl || mixBlob) && hasBetterData;
@@ -1014,7 +1293,7 @@ export function MusixmatchProTools({
       }, 80);
       return () => clearTimeout(timer);
     }
-  }, [activeTool, effectiveRichsync, effectiveAnalysis, enrichedRef, audioUrl, mixBlob, previewStarted, startVideoPreview, lyrics, karaokeMode, stopCurrentPreview]);
+  }, [activeTool, effectiveRichsync, effectiveAnalysis, enrichedRef, audioUrl, mixBlob, previewStarted, startVideoPreview, lyrics, karaokeMode, syncOffsetSec, stopCurrentPreview]);
 
   // Render
   if (!hasContent) {
@@ -1027,7 +1306,7 @@ export function MusixmatchProTools({
         <div>
           <div className="text-xs uppercase tracking-[1px] text-muted">Musixmatch Pro</div>
           <div className="font-semibold text-sm">Lyrics • Analysis • Catalog • Translation • Video</div>
-          {!enrichedRef && <div className="text-[10px] text-accent-light mt-0.5">Match &amp; Enrich untuk data real dari MXM (richsync + analysis untuk lyric video lebih akurat)</div>}
+          {!enrichedRef && <div className="text-[10px] text-accent-light mt-0.5">Match &amp; Enrich for live MXM data (richsync + analysis for accurate lyric video timing)</div>}
         </div>
 
         <button
@@ -1103,54 +1382,122 @@ export function MusixmatchProTools({
 
           {activeTool === "analysis" && toolData && (
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="bg-black/30 p-3 rounded">
+              <div className="bg-black/30 p-3 rounded space-y-2">
                 <div className="uppercase text-[10px] text-muted">Project</div>
                 <div className="font-medium">{toolData.project?.title} — {toolData.project?.artist}</div>
-                <div className="text-xs mt-1 opacity-75">{toolData.project?.genre} / {toolData.project?.mood}</div>
+                <div className="text-xs opacity-75">{toolData.project?.genre} / {toolData.project?.mood} · {toolData.project?.bpm ?? "—"} BPM</div>
+                {toolData.local?.structure && (
+                  <div className="text-xs space-y-1 pt-1 border-t border-border/40">
+                    <div>Hook strength: <strong>{toolData.local.structure.hookStrength}</strong></div>
+                    <div>Sentiment: {toolData.local.structure.sentiment}</div>
+                    <div>Hook: “{toolData.local.structure.hookLine}”</div>
+                    <div>Themes: {toolData.local.structure.themes?.join(", ") || "—"}</div>
+                  </div>
+                )}
               </div>
-              <div className="bg-black/30 p-3 rounded">
-                <div className="uppercase text-[10px] text-muted mb-1">MXM Analysis</div>
-                {toolData.mxm ? (
+              <div className="bg-black/30 p-3 rounded space-y-2">
+                <div className="uppercase text-[10px] text-muted mb-1">
+                  Analysis ({toolData.source === "local" ? "local" : toolData.source === "merged" ? "project + MXM" : "MXM"})
+                </div>
+                {toolData.local?.analysis ? (
                   <div className="text-xs space-y-1">
-                    {toolData.mxm.moods?.main_moods && <div>Moods: {toolData.mxm.moods.main_moods.join(", ")}</div>}
-                    {toolData.mxm.themes && <div>Themes available</div>}
-                    {toolData.mxm.meaning?.explanation && <div className="italic">“{toolData.mxm.meaning.explanation.slice(0, 140)}...”</div>}
+                    {toolData.local.analysis.moods?.main_moods?.length ? (
+                      <div><span className="text-muted">Moods:</span> {toolData.local.analysis.moods.main_moods.join(", ")}</div>
+                    ) : null}
+                    {toolData.local.analysis.themes?.main_themes?.length ? (
+                      <div><span className="text-muted">Themes:</span> {toolData.local.analysis.themes.main_themes.map((t: any) => t.theme || t).join(" • ")}</div>
+                    ) : null}
+                    {toolData.local.analysis.meaning?.explanation && (
+                      <div className="italic opacity-90">“{toolData.local.analysis.meaning.explanation.slice(0, 220)}{toolData.local.analysis.meaning.explanation.length > 220 ? "…" : ""}”</div>
+                    )}
+                    {toolData.local.sectionInsights?.length ? (
+                      <div className="pt-1 border-t border-border/40">
+                        <div className="text-[10px] uppercase text-muted mb-1">Per section</div>
+                        {toolData.local.sectionInsights.map((s: any) => (
+                          <div key={s.section} className="text-[11px]">{s.label}: {s.sentiment} · {s.wordCount} words</div>
+                        ))}
+                      </div>
+                    ) : null}
                     <button
                       onClick={applyMxmToBrief}
                       className="mt-2 text-[10px] underline hover:no-underline text-accent-light"
                     >
-                      Apply MXM analysis to creative brief (copy)
+                      Copy analysis to creative brief
                     </button>
-                    {toolData.applied && <span className="ml-2 text-[10px] text-success">✓ Applied</span>}
+                    {toolData.applied && <span className="ml-2 text-[10px] text-success">✓ Copied</span>}
                   </div>
                 ) : (
                   <div className="text-xs opacity-70">{toolData.note}</div>
+                )}
+                {toolData.reference && (
+                  <div className="text-[10px] text-muted pt-1">MXM ref: {toolData.reference.title} — {toolData.reference.artist}</div>
                 )}
               </div>
             </div>
           )}
 
           {activeTool === "catalog" && toolData && (
-            <div>
-              <pre className="text-xs bg-black/30 p-3 rounded mb-2">{JSON.stringify(toolData.projectMeta, null, 2)}</pre>
-              {toolData.mxmSimilar?.length > 0 && (
-                <div className="text-xs">MXM hits: {toolData.mxmSimilar.map((t: any) => t.title).join(" • ")}</div>
+            <div className="space-y-3">
+              <div className="text-xs bg-black/30 p-3 rounded">
+                <div className="font-medium">{toolData.projectMeta?.title} · {toolData.projectMeta?.artistName}</div>
+                <div className="text-muted mt-1">{toolData.projectMeta?.genre} · {toolData.projectMeta?.bpmTarget ?? "—"} BPM · analysis: {toolData.analysisSource}</div>
+              </div>
+              {toolData.similar?.length > 0 ? (
+                <div>
+                  <div className="text-[10px] uppercase text-muted mb-2">Similar catalog tracks (MXM analysis.search)</div>
+                  <div className="grid gap-2">
+                    {toolData.similar.map((hit: any) => (
+                      <div key={hit.track.id} className="text-xs rounded border border-border/60 bg-black/20 px-3 py-2">
+                        <div className="font-medium">{hit.track.title} — {hit.track.artist}</div>
+                        <div className="text-muted mt-0.5">
+                          {hit.track.genre || "—"} · rating {hit.track.rating ?? "—"}
+                          {hit.ref?.moods?.length ? ` · ${hit.ref.moods.join(", ")}` : ""}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-muted">No similar tracks yet — add moods/themes via Analysis or Match &amp; Enrich.</div>
+              )}
+              {toolData.titleMatches?.length > 0 && (
+                <div>
+                  <div className="text-[10px] uppercase text-muted mb-2">Title search matches</div>
+                  <div className="text-xs">{toolData.titleMatches.map((t: any) => `${t.title} — ${t.artist}`).join(" • ")}</div>
+                </div>
               )}
             </div>
           )}
 
           {activeTool === "translation" && toolData && (
             <div className="space-y-3">
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center flex-wrap">
                 <select value={transLang} onChange={(e) => setTransLang(e.target.value)} className="bg-surface border rounded px-2 py-1 text-xs">
-                  <option value="en">en</option><option value="id">id</option><option value="es">es</option>
-                  <option value="fr">fr</option><option value="it">it</option>
+                  <option value="id">Indonesian (id)</option>
+                  <option value="es">Spanish (es)</option>
+                  <option value="fr">French (fr)</option>
+                  <option value="it">Italian (it)</option>
+                  <option value="de">German (de)</option>
+                  <option value="pt">Portuguese (pt)</option>
+                  <option value="ja">Japanese (ja)</option>
+                  <option value="en">English (en)</option>
                 </select>
-                <button onClick={() => void handleTranslate()} className="btn-secondary text-xs px-3">Get MXM Translation</button>
+                <button onClick={() => void handleTranslate()} className="btn-secondary text-xs px-3" disabled={toolLoading}>
+                  Translate to {translationLanguageLabel(transLang)}
+                </button>
+                {toolData.source && toolData.translated && (
+                  <span className="text-[10px] text-muted">via {toolData.source}</span>
+                )}
               </div>
-              <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.original}</pre>
+              <div>
+                <div className="text-[10px] uppercase text-muted mb-1">Original</div>
+                <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.original}</pre>
+              </div>
               {toolData.translated && (
-                <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.translated}</pre>
+                <div>
+                  <div className="text-[10px] uppercase text-muted mb-1">{translationLanguageLabel(toolData.translatedLang || transLang)}</div>
+                  <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.translated}</pre>
+                </div>
               )}
             </div>
           )}
@@ -1195,6 +1542,20 @@ export function MusixmatchProTools({
                       {m}
                     </button>
                   ))}
+                </div>
+                <div className="flex items-center gap-2 min-w-[200px]">
+                  <span className="text-muted shrink-0">Sync:</span>
+                  <input
+                    type="range"
+                    min={-0.3}
+                    max={1.5}
+                    step={0.05}
+                    value={syncOffsetSec}
+                    onChange={(e) => setSyncOffsetSec(parseFloat(e.target.value))}
+                    className="flex-1 accent-accent h-1"
+                    title="Delay lyrics vs audio. Increase if highlight is ahead of vocals."
+                  />
+                  <span className="text-[10px] tabular-nums text-muted w-10">{syncOffsetSec.toFixed(2)}s</span>
                 </div>
               </div>
 
@@ -1249,9 +1610,17 @@ export function MusixmatchProTools({
                 </button>
               </div>
 
-              {(effectiveRichsync || effectiveAnalysis) && (
+              {(mxmSyncSource || effectiveRichsync || effectiveAnalysis) && (
                 <div className="text-[10px] text-success mb-1.5">
-                  ✓ Using MXM {effectiveRichsync ? "richsync timing" : ""}{effectiveRichsync && effectiveAnalysis ? " + " : ""}{effectiveAnalysis ? "analysis visuals" : ""} — auto-refreshes on enrich
+                  ✓ Sync: {mxmSyncSource === "whisper.forced-align"
+                    ? "Groq Whisper (listens to your mix)"
+                    : mxmSyncSource === "audio.vocal-phrases"
+                      ? "Audio vocal detection (from mix waveform)"
+                      : mxmSyncSource
+                        ? `MXM ${mxmSyncSource.replace(/^mxm\./, "")} — gaps = instrumental`
+                        : effectiveRichsync
+                          ? "MXM richsync"
+                          : "section timing"}
                 </div>
               )}
 
@@ -1355,7 +1724,9 @@ export function MusixmatchProTools({
               )}
 
               <p className="text-[10px] mt-2 text-muted">
-                MXM Pro style: uses richsync precise timing (per-char when available per their docs) mapped to your project lyrics for accurate karaoke. Auto word/char highlight, mood-reactive visuals, platform formats. Canvas recording for export. Change Karaoke mode above for control.
+                Sync pipeline: MXM catalog (if match) → Groq Whisper (original songs) → vocal waveform → section timing.
+                For AI-generated originals, Whisper alignment is usually best — requires GROQ_API_KEY on backend.
+                Karaoke mode above controls word/char highlight. Canvas recording for export.
               </p>
             </div>
           )}
