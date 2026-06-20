@@ -71,30 +71,30 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
           <button type="button" onClick={handleClose} className="text-muted">✕</button>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 flex flex-col gap-3">
           <button
             type="button"
             onClick={() => setCreationMode("prompt")}
-            className="flex flex-col items-start gap-2 rounded-2xl border border-accent/40 bg-accent-muted/10 p-5 text-left transition hover:border-accent hover:bg-accent-muted/20"
+            className="flex flex-col items-start gap-1.5 rounded-xl border border-accent/40 bg-accent-muted/10 p-4 text-left transition hover:border-accent hover:bg-accent-muted/20"
           >
-            <div className="flex items-center gap-2 font-semibold">
-              <Sparkles className="h-5 w-5 text-accent-light" /> Create with AI Prompt
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Sparkles className="h-4 w-4 text-accent-light" /> Create with AI Prompt
             </div>
-            <div className="text-sm text-muted">
-              Describe your song idea in natural language. Uses Groq (free) to generate full lyrics + creativeBrief + arrangement + settings.
+            <div className="text-xs text-muted">
+              Describe your song idea. AI generates full lyrics, brief, and arrangement.
             </div>
           </button>
 
           <button
             type="button"
             onClick={() => setCreationMode("template")}
-            className="flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-5 text-left transition hover:border-accent hover:bg-accent-muted/10"
+            className="flex flex-col items-start gap-1.5 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-accent hover:bg-accent-muted/10"
           >
-            <div className="flex items-center gap-2 font-semibold">
+            <div className="flex items-center gap-2 font-semibold text-sm">
               Browse Templates
             </div>
-            <div className="text-sm text-muted">
-              Pick from all available example templates (full lyrics + brief + arrangement).
+            <div className="text-xs text-muted">
+              Pick from available example templates (full lyrics + brief + arrangement).
             </div>
           </button>
         </div>
