@@ -600,7 +600,6 @@ export function MusixmatchProTools({
         bpm: project.bpmTarget,
         richsync: richsyncForTiming,
         syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
-        durationStretch: 1.14,
       });
 
       return {
@@ -679,10 +678,8 @@ export function MusixmatchProTools({
       /* preview still runs with fallback */
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
     stopCurrentPreview();
-    startVideoPreview();
+    await startVideoPreview();
 
     setIsVideoGenerating(false);
     setVideoPreviewReady(true);
@@ -775,7 +772,6 @@ export function MusixmatchProTools({
         bpm: project.bpmTarget,
         richsync: richsyncForTiming,
         syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
-        durationStretch: 1.14,
       });
     }
 
