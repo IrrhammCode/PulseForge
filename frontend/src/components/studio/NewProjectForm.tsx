@@ -11,61 +11,20 @@ import {
   buildExampleCreateInput,
   STUDIO_EXAMPLE_PRESETS,
 } from "@pulseforge/shared/lib/studio/example-presets";
+import { generateProjectFromPrompt } from "@pulseforge/shared/lib/studio/ai-rewrite-coach";
 
 interface NewProjectFormProps {
   onCreate: (input: CreateProjectInput) => StudioProject;
 }
 
-function applyPresetToFormState(presetId: string) {
-  const preset = STUDIO_EXAMPLE_PRESETS.find((p) => p.id === presetId);
-  if (!preset) return null;
-  const seed = buildExampleCreateInput(preset);
-  return {
-    title: seed.title,
-    artistName: seed.artistName,
-    genreTags: seed.genreTags ?? [GENRE_OPTIONS[1]],
-    moodTags: seed.moodTags ?? [MOOD_OPTIONS[0]],
-    genreCustom: seed.genreCustom ?? "",
-    moodCustom: seed.moodCustom ?? "",
-    bpmTarget: seed.bpmTarget != null ? String(seed.bpmTarget) : "",
-    preset,
-  };
-}
-
 export function NewProjectForm({ onCreate }: NewProjectFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("Midnight Drive");
-  const [artistName, setArtistName] = useState("Nova Ray");
-  const [genreTags, setGenreTags] = useState<string[]>([GENRE_OPTIONS[1]]);
-  const [moodTags, setMoodTags] = useState<string[]>([MOOD_OPTIONS[0]]);
-  const [genreCustom, setGenreCustom] = useState("");
-  const [moodCustom, setMoodCustom] = useState("");
-  const [bpmTarget, setBpmTarget] = useState("120");
-  const [loadedExampleId, setLoadedExampleId] = useState<string | null>(null);
 
-  const previewSeed = {
-    genre: genreTags[0] ?? "Pop",
-    mood: moodTags[0] ?? "Energetic",
-    genreTags,
-    moodTags,
-    genreCustom,
-    moodCustom,
-  };
-
-  const fillFormFromExample = (presetId: string) => {
-    const next = applyPresetToFormState(presetId);
-    if (!next) return;
-    setTitle(next.title);
-    setArtistName(next.artistName);
-    setGenreTags(next.genreTags);
-    setMoodTags(next.moodTags);
-    setGenreCustom(next.genreCustom);
-    setMoodCustom(next.moodCustom);
-    setBpmTarget(next.bpmTarget);
-    setLoadedExampleId(presetId);
-    if (!open) setOpen(true);
-  };
+  const [creationMode, setCreationMode] = useState<"choice" | "prompt" | "template">("choice");
+  const [promptText, setPromptText] = useState("");
+  const [isGeneratingFromPrompt, setIsGeneratingFromPrompt] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
 
   const createFromExample = (presetId: string) => {
     const preset = STUDIO_EXAMPLE_PRESETS.find((p) => p.id === presetId);
@@ -74,33 +33,19 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
     router.push(`/studio/${project.id}/write`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !artistName.trim()) return;
-    if (!genreTags.length || !moodTags.length) return;
-
-    const examplePreset = loadedExampleId
-      ? STUDIO_EXAMPLE_PRESETS.find((p) => p.id === loadedExampleId)
-      : undefined;
-    const exampleSeed = examplePreset ? buildExampleCreateInput(examplePreset) : null;
-
-    const project = onCreate({
-      title: title.trim(),
-      artistName: artistName.trim(),
-      genre: primaryGenreLabel(previewSeed),
-      mood: primaryMoodLabel(previewSeed),
-      genreTags,
-      moodTags,
-      genreCustom: genreCustom.trim() || undefined,
-      moodCustom: moodCustom.trim() || undefined,
-      bpmTarget: bpmTarget ? Number(bpmTarget) : undefined,
-      creativeBrief: exampleSeed?.creativeBrief,
-      musicArrangement: exampleSeed?.musicArrangement,
-      initialLyrics: exampleSeed?.initialLyrics,
-    });
-
-    router.push(`/studio/${project.id}/write`);
+  const resetToChoice = () => {
+    setCreationMode("choice");
+    setPromptText("");
+    setPromptError(null);
+    setIsGeneratingFromPrompt(false);
   };
+
+  const handleClose = () => {
+    setOpen(false);
+    resetToChoice();
+  };
+
+
 
   if (!open) {
     return (
@@ -114,117 +59,148 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
     );
   }
 
+  // Choice screen
+  if (creationMode === "choice") {
+    return (
+      <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">New studio project</h2>
+            <p className="mt-1 text-sm text-muted">How do you want to start?</p>
+          </div>
+          <button type="button" onClick={handleClose} className="text-muted">✕</button>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setCreationMode("prompt")}
+            className="flex flex-col items-start gap-2 rounded-2xl border border-accent/40 bg-accent-muted/10 p-5 text-left transition hover:border-accent hover:bg-accent-muted/20"
+          >
+            <div className="flex items-center gap-2 font-semibold">
+              <Sparkles className="h-5 w-5 text-accent-light" /> Create with AI Prompt
+            </div>
+            <div className="text-sm text-muted">
+              Describe your song idea in natural language. Uses Groq (free) to generate full lyrics + creativeBrief + arrangement + settings.
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCreationMode("template")}
+            className="flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-5 text-left transition hover:border-accent hover:bg-accent-muted/10"
+          >
+            <div className="flex items-center gap-2 font-semibold">
+              Browse Templates
+            </div>
+            <div className="text-sm text-muted">
+              Pick from all available example templates (full lyrics + brief + arrangement).
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-4 text-right">
+          <button type="button" onClick={handleClose} className="btn-secondary text-sm">
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Prompt mode
+  if (creationMode === "prompt") {
+    return (
+      <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Generate with AI</h2>
+            <p className="text-sm text-muted">Describe the song you want. AI will create full lyrics, brief, arrangement etc.</p>
+          </div>
+          <button type="button" onClick={resetToChoice} className="text-xs underline">Back</button>
+        </div>
+
+        <textarea
+          value={promptText}
+          onChange={(e) => setPromptText(e.target.value)}
+          placeholder="e.g. A melancholic 80s synth pop song about a long distance phone call at night, lonely but hopeful"
+          className="w-full min-h-[100px] rounded-xl border border-border bg-surface p-3 text-sm outline-none focus:border-accent/40"
+        />
+
+        {promptError && <p className="mt-2 text-sm text-warning">{promptError}</p>}
+
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!promptText.trim()) return;
+              setIsGeneratingFromPrompt(true);
+              setPromptError(null);
+              try {
+                const generated = await generateProjectFromPrompt(promptText.trim());
+                const project = onCreate({
+                  title: generated.title,
+                  artistName: generated.artistName,
+                  genre: primaryGenreLabel({ genreTags: generated.genreTags, moodTags: generated.moodTags } as any),
+                  mood: primaryMoodLabel({ genreTags: generated.genreTags, moodTags: generated.moodTags } as any),
+                  genreTags: generated.genreTags,
+                  moodTags: generated.moodTags,
+                  bpmTarget: generated.bpmTarget,
+                  creativeBrief: generated.creativeBrief,
+                  musicArrangement: generated.musicArrangement,
+                  initialLyrics: generated.lyrics,
+                });
+                router.push(`/studio/${project.id}/write`);
+              } catch (e: any) {
+                setPromptError(e?.message || "AI generation failed. Try a different description.");
+              } finally {
+                setIsGeneratingFromPrompt(false);
+              }
+            }}
+            disabled={!promptText.trim() || isGeneratingFromPrompt}
+            className="btn-primary"
+          >
+            {isGeneratingFromPrompt ? "Generating with AI..." : "Generate Project with AI"}
+          </button>
+          <button type="button" onClick={resetToChoice} className="btn-secondary">
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Template mode - show ALL templates
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold">New studio project</h2>
-          <p className="mt-1 text-sm text-muted">
-            Mix genres & moods — or pick a fill example and go straight to Generate Full Song.
-          </p>
+          <h2 className="text-lg font-semibold">Choose a Template</h2>
+          <p className="text-sm text-muted">All available full templates with lyrics, creative brief and arrangement.</p>
         </div>
-        <FillExampleButton onFill={fillFormFromExample} compact />
+        <button type="button" onClick={resetToChoice} className="text-xs underline">Back</button>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
-            Track title
-          </span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Midnight Drive"
-            required
-            className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent/40"
-          />
-        </label>
-
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
-            Artist name
-          </span>
-          <input
-            value={artistName}
-            onChange={(e) => setArtistName(e.target.value)}
-            placeholder="Nova Ray"
-            required
-            className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent/40"
-          />
-        </label>
-
-        <div className="sm:col-span-2">
-          <StyleTagPicker
-            label="Genre mix"
-            hint="pick up to 3"
-            options={GENRE_OPTIONS}
-            selected={genreTags}
-            customValue={genreCustom}
-            onCustomChange={setGenreCustom}
-            onChange={setGenreTags}
-            max={3}
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <StyleTagPicker
-            label="Mood mix"
-            hint="pick up to 3"
-            options={MOOD_OPTIONS}
-            selected={moodTags}
-            customValue={moodCustom}
-            onCustomChange={setMoodCustom}
-            onChange={setMoodTags}
-            max={3}
-          />
-        </div>
-
-        <label className="block sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted">
-            Target BPM <span className="normal-case text-muted/70">(optional)</span>
-          </span>
-          <input
-            type="number"
-            min={60}
-            max={200}
-            value={bpmTarget}
-            onChange={(e) => setBpmTarget(e.target.value)}
-            placeholder="120"
-            className="w-full max-w-[140px] rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-accent/40"
-          />
-        </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {STUDIO_EXAMPLE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => createFromExample(preset.id)}
+            title={preset.description}
+            className="text-left rounded-xl border border-accent/30 bg-accent-muted/10 p-4 hover:border-accent hover:bg-accent-muted/20 transition"
+          >
+            <div className="font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-accent-light" /> {preset.label}
+            </div>
+            <div className="mt-1 text-sm text-muted line-clamp-2">{preset.description}</div>
+          </button>
+        ))}
       </div>
 
-      <div className="mt-6 flex flex-col gap-3">
-        <div className="flex flex-wrap gap-2">
-          {STUDIO_EXAMPLE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => createFromExample(preset.id)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-muted/40 px-4 py-2.5 text-sm font-semibold text-accent-light transition hover:bg-accent-muted"
-            >
-              <Sparkles className="h-4 w-4" />
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-3">
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={!genreTags.length || !moodTags.length}
-        >
-          Create & open studio
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
-          Cancel
-        </button>
-        </div>
+      <div className="mt-4">
+        <button type="button" onClick={handleClose} className="btn-secondary text-sm">Cancel</button>
       </div>
-    </form>
+    </div>
   );
 }
