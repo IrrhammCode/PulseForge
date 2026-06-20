@@ -58,6 +58,7 @@ export default function ProjectsPage() {
     { title: "Midnight Drive", artistName: "Nova Ray", genre: "Indie Pop", mood: "Energetic", bpmTarget: 120 },
     { title: "Echoes in the Rain", artistName: "Luna Vale", genre: "Indie Pop", mood: "Melancholic" },
     { title: "Run the Night", artistName: "Kai Meridian", genre: "Dance Pop", mood: "Energetic" },
+    { title: "Static Between Us", artistName: "Julian Vale", genre: "Pop", mood: "Melancholic", bpmTarget: 74 },
   ];
 
   const handleCreateTemplate = (tpl: (typeof templates)[0]) => {
@@ -74,7 +75,7 @@ export default function ProjectsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
             Projects
@@ -86,7 +87,7 @@ export default function ProjectsPage() {
             Manage your tracks in the full studio pipeline.
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="w-full md:w-auto md:max-w-md shrink-0">
           <NewProjectForm onCreate={create} />
         </div>
       </div>
