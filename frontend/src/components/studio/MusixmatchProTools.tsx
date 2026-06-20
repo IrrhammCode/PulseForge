@@ -516,37 +516,32 @@ export function MusixmatchProTools({
 
   const resolveVideoSyncPipeline = useCallback(
     async (durationSec: number, audioBlob: Blob | null) => {
-      const currentMxmId = enrichedRef?.track?.id
-        ? Number(enrichedRef.track.id)
-        : initialMxmId
-          ? Number(initialMxmId)
-          : null;
-      const currentCommontrackId = enrichedRef?.track?.commontrackId
-        ? Number(enrichedRef.track.commontrackId)
-        : undefined;
+      const analysisSource = audioBlob ?? mixBlob ?? audioUrl;
 
-      // 1) MXM Pro — only when catalog lyrics actually match project
-      if (currentMxmId || (project.title && project.artistName)) {
+      // 1) AUDIO-FIRST: Detect vocals from the actual audio being played.
+      //    This is the primary sync method because the user's mix (AI-generated)
+      //    has different timing than any catalog recording.
+      if (analysisSource) {
         try {
-          const mxmSync = await fetchMxmVideoSync({
+          const profile = await analyzeMixVocalActivity(analysisSource);
+          vocalActivityRef.current = profile;
+          const projectLines = collectProjectLinesWithSections(lyrics);
+          const vocalLines = buildTimedLinesFromVocalPhrases(
+            projectLines,
+            profile,
             durationSec,
-            trackId: currentMxmId ?? undefined,
-            commontrackId: currentCommontrackId,
-            title: project.title,
-            artist: project.artistName,
-            lyrics,
-            maxDeviationSec: 5,
-          });
-          if (mxmSync?.lines?.length) {
+            syncOffsetSec
+          );
+          // Accept if we mapped at least 45% of lines to vocal phrases
+          if (vocalLines.length >= Math.ceil(projectLines.length * 0.45)) {
             return {
-              lines: mxmSync.lines,
-              source: mxmSync.source,
-              useStrict: true,
-              richsync: mxmSync.richsync,
+              lines: vocalLines,
+              source: "audio.vocal-phrases",
+              useStrict: false,
             };
           }
         } catch {
-          /* try next */
+          vocalActivityRef.current = null;
         }
       }
 
@@ -558,7 +553,7 @@ export function MusixmatchProTools({
             return {
               lines: whisper.lines,
               source: whisper.source,
-              useStrict: true,
+              useStrict: false,
             };
           }
         } catch {
@@ -566,39 +561,9 @@ export function MusixmatchProTools({
         }
       }
 
-      // 3) Vocal phrase detection from mix waveform (no API)
-      try {
-        const analysisSource = audioBlob ?? mixBlob ?? audioUrl;
-        if (analysisSource) {
-          const profile = await analyzeMixVocalActivity(analysisSource);
-          vocalActivityRef.current = profile;
-          const projectLines = collectProjectLinesWithSections(lyrics);
-          const vocalLines = buildTimedLinesFromVocalPhrases(
-            projectLines,
-            profile,
-            durationSec,
-            syncOffsetSec
-          );
-          if (vocalLines.length >= Math.ceil(projectLines.length * 0.45)) {
-            return {
-              lines: vocalLines,
-              source: "audio.vocal-phrases",
-              useStrict: true,
-            };
-          }
-        }
-      } catch {
-        vocalActivityRef.current = null;
-      }
-
-      // 4) Section timing (last resort)
-      const richsyncForTiming =
-        effectiveRichsync && richsyncMatchesProjectLyrics(effectiveRichsync, lyrics)
-          ? effectiveRichsync
-          : null;
+      // 3) Section timing fallback (text-only, no catalog richsync)
       const fallback = buildLyricVideoTimedLines(lyrics, durationSec, {
         bpm: project.bpmTarget,
-        richsync: richsyncForTiming,
         syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
       });
 
@@ -609,15 +574,10 @@ export function MusixmatchProTools({
       };
     },
     [
-      enrichedRef,
-      initialMxmId,
-      project.title,
-      project.artistName,
       project.bpmTarget,
       lyrics,
       syncOffsetSec,
       karaokeMode,
-      effectiveRichsync,
       mixBlob,
       audioUrl,
     ]
@@ -763,14 +723,8 @@ export function MusixmatchProTools({
     }
 
     if (timedLines.length === 0) {
-      const richsyncForTiming =
-        effectiveRichsync && richsyncMatchesProjectLyrics(effectiveRichsync, lyrics)
-          ? effectiveRichsync
-          : null;
-
       timedLines = buildLyricVideoTimedLines(lyrics, targetTotal, {
         bpm: project.bpmTarget,
-        richsync: richsyncForTiming,
         syncOffsetSec: syncOffsetSec + (karaokeMode === "word" ? 0.15 : 0),
       });
     }
@@ -788,22 +742,8 @@ export function MusixmatchProTools({
       }));
     }
 
-    // Client vocal detection only when MXM sync unavailable
-    let vocalProfile: VocalActivityProfile | null = null;
-    if (!useMxmStrict) {
-      try {
-        const analysisSource = mixBlob ?? audioUrl;
-        if (analysisSource) {
-          vocalProfile = await analyzeMixVocalActivity(analysisSource);
-          vocalActivityRef.current = vocalProfile;
-          timedLines = alignTimedLinesToVocalOnsets(timedLines, vocalProfile);
-        }
-      } catch {
-        vocalActivityRef.current = null;
-      }
-    } else {
-      vocalActivityRef.current = null;
-    }
+    // Use vocal profile from the pipeline (already detected in resolveVideoSyncPipeline)
+    const vocalProfile: VocalActivityProfile | null = vocalActivityRef.current;
 
     // Start audio + canvas on the same beat (avoids lyrics ahead of buffered audio)
     audio.currentTime = 0;
@@ -815,7 +755,7 @@ export function MusixmatchProTools({
     });
 
     // Use actual audio duration when available for accurate progress bar
-    let total = effectiveRichsync?.durationSec || (project as any).durationSec || 120;
+    let total = (project as any).durationSec || 120;
     if (audio && audio.duration && isFinite(audio.duration) && audio.duration > 5) {
       total = audio.duration;
     } else if (timedLines.length) {
@@ -884,18 +824,13 @@ export function MusixmatchProTools({
       ctx.fillStyle = pulseGrad;
       ctx.fillRect(0, 0, w, h);
 
-      // === Lyric display (MXM strict segment timing or vocal-aware fallback) ===
-      const syncT = t - syncOffsetSec;
-      const display = useMxmStrict
-        ? resolveMxmStrictDisplay(syncT, timedLines)
-        : resolveDisplayLineAt(t, timedLines, vocalProfile);
+      // === Lyric display (vocal-aware: pauses during instrumental, advances with singing) ===
+      const display = resolveDisplayLineAt(t, timedLines, vocalProfile);
       const ht = display.highlightTime;
       const activeTimedLine = display.line;
       let activeLineInfo: { text: string; start: number; end: number; progress: number } | null = null;
       const upcomingLines: string[] = [];
-      const inInstrumentalGap = useMxmStrict
-        ? (display as ReturnType<typeof resolveMxmStrictDisplay>).inGap
-        : display.paused && !display.line;
+      const inInstrumentalGap = display.paused && !display.line;
 
       if (activeTimedLine) {
         const segDur = Math.max(0.8, activeTimedLine.end - activeTimedLine.start);
@@ -910,7 +845,7 @@ export function MusixmatchProTools({
         const idx = display.lineIndex;
         for (let i = idx + 1; i < timedLines.length && upcomingLines.length < 2; i++) {
           const next = timedLines[i]!;
-          if (inInstrumentalGap && syncT < next.start) break;
+          if (inInstrumentalGap && t < next.start) break;
           if (!inInstrumentalGap && display.paused && t < next.start) break;
           upcomingLines.push(next.text);
         }
