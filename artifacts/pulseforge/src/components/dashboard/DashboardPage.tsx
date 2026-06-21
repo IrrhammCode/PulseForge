@@ -107,6 +107,9 @@ export function DashboardPage() {
         <NewProjectForm onCreate={create} />
       </div>
 
+      {/* Showcase — Made with PulseForge (front and center) */}
+      <ExampleSongsShowcase />
+
       {/* Stats band — big editorial numbers */}
       <div className="mt-10 grid grid-cols-2 border-y-2 border-foreground md:grid-cols-4">
         {statCards.map((card, i) => (
@@ -257,8 +260,6 @@ export function DashboardPage() {
               ))}
             </div>
           )}
-
-          <ExampleSongsShowcase />
 
           {/* Viral Lab candidates */}
           {ready && viralCandidates.length > 0 && (
