@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useStudioProjects } from "@/lib/hooks/useStudioProjects";
 import { ProjectCard } from "@/components/studio/ProjectCard";
+import { ExampleSongsShowcase } from "@/components/dashboard/ExampleSongsShowcase";
 import { NewProjectForm } from "@/components/studio/NewProjectForm";
 import {
   computeDashboardStats,
@@ -256,6 +257,8 @@ export function DashboardPage() {
               ))}
             </div>
           )}
+
+          <ExampleSongsShowcase />
 
           {/* Viral Lab candidates */}
           {ready && viralCandidates.length > 0 && (
