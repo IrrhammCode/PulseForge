@@ -6,7 +6,11 @@ const app = createApp();
 
 app.listen(PORT, () => {
   console.log(`PulseForge backend listening on http://localhost:${PORT}`);
-  console.log(`SQLite DB: ${process.env.DATABASE_URL ?? "file:./data/pulseforge.db"}`);
+  const dbUrl = process.env.PULSEFORGE_DATABASE_URL ?? "file:./data/pulseforge.db";
+  // Never log the raw connection string — it can contain credentials. Report
+  // only the scheme (e.g. "file", "postgresql").
+  const dbScheme = dbUrl.split(":", 1)[0] || "unknown";
+  console.log(`Database: ${dbScheme}`);
   const partners = [
     `Musixmatch: ${(process.env.MUSIXMATCH_API_KEY || process.env.MXM_KEY) ? "configured" : "demo/mock"}`,
     `Cyanite: ${process.env.CYANITE_ACCESS_TOKEN ? "configured" : "demo"}`,
