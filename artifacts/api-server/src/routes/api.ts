@@ -22,6 +22,7 @@ import { DEFAULT_WHAT_IF } from "@pulseforge/shared/lib/constants";
 import { buildVersionSnapshot } from "@pulseforge/shared/lib/domain/version-snapshot";
 import { buildStudioTrack, runStudioAnalysis } from "@pulseforge/shared/lib/scoring/studio-analysis";
 import { runIntelligentOptimize } from "@pulseforge/shared/lib/studio/intelligent-optimize";
+import { generateProjectConcept } from "@pulseforge/shared/lib/studio/generate-project";
 import { fetchStudioDraftPartners } from "@pulseforge/shared/lib/scoring/studio-draft-partners";
 import { runViralAnalysis } from "@pulseforge/shared/lib/viral/run-viral-analysis";
 import { getLiveTrendFeed } from "@pulseforge/shared/lib/trends/feed";
@@ -405,6 +406,26 @@ apiRouter.post("/studio/lyrics/coach-fix", async (req, res) => {
     res.status(500).json({
       error: err instanceof Error ? err.message : "Coach fix failed",
     });
+  }
+});
+
+apiRouter.post("/studio/generate", async (req, res) => {
+  try {
+    const body = req.body as { prompt?: string };
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (!prompt) {
+      res.status(400).json({ error: "A creative brief (prompt) is required" });
+      return;
+    }
+
+    const concept = await generateProjectConcept(prompt);
+    res.json(concept);
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "AI project generation failed";
+    // Missing provider config is a client-actionable 503, everything else is 500.
+    const status = /isn't available|GROQ_API_KEY/i.test(message) ? 503 : 500;
+    res.status(status).json({ error: message });
   }
 });
 
