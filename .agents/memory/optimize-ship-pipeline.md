@@ -31,3 +31,27 @@ Songstats needs a released track, so both are usually unavailable — lyrics
 (via the Groq AI rewrite) plus bpm/duration are the only score levers. A
 genuine first optimize moves ~+10 overall / +7 hook; an already-optimized
 track honestly shows ~0 (no more headroom), which is correct, not a bug.
+
+## Raw-mode lyrics trap (the "always +0/+0" cause)
+
+The lyric editor has two **exclusive** modes: "sections" (writes structured
+keys, sets `raw:""`) and "raw" (freeform paste — sets `raw:<text>`, all
+structured keys empty). `composeLyricsBody` **prioritizes `raw`**: if `raw` is
+non-empty it returns ONLY `raw` and ignores structured sections.
+
+The AI coach rewrite (`runIntelligentOptimize`) only writes structured keys,
+and `mergeLyrics` historically preserved `raw`. So for raw-mode lyrics the
+rewrite was (a) prompted from EMPTY sections (never saw the real song) and
+(b) shadowed by the unchanged `raw` in `composeLyricsBody` → every candidate
+scored identical to baseline → phantom +0/+0 for ALL raw-mode tracks.
+
+**Rule:** any lyric-rewrite pipeline must reconcile the `raw`-vs-structured
+duality. `runIntelligentOptimize` now normalizes raw-only lyrics into
+structured working sections (parse headers, else dump the blob into `verse1`)
+before prompting/merging, and `mergeLyrics` clears `raw` whenever the AI
+returns any structured text so the rewrite surfaces.
+
+**Why it was invisible in curl tests:** a fixture with empty `raw` (structured
+already populated) takes the working path and shows a real gain (~+4). Only
+raw-authored tracks hit 0 — reproduce by moving lyrics into `raw` with
+structured keys empty.

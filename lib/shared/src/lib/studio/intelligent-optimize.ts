@@ -1,6 +1,8 @@
 import type { LyricsSections, StudioProject } from "@/types/studio";
+import { EMPTY_LYRICS } from "@/types/studio";
 import type { TrackAnalysis } from "@/types";
 import { applyConceptToLyrics, buildAutoFixPatches } from "@/lib/studio/song-concept";
+import { parseLyricsSections } from "@/lib/studio/lyrics";
 
 /**
  * Server-side "coach fix" brain for Optimize & Ship.
@@ -338,6 +340,11 @@ function mergeLyrics(
 ): LyricsSections {
   const pick = (next: string | undefined, fallback: string) =>
     next && next.trim() ? next : fallback;
+  // If the AI returned any structured section, the rewrite lives in the
+  // structured keys — clear `raw` so composeLyricsBody surfaces the rewrite
+  // instead of returning stale freeform text (which would mask the rewrite and
+  // re-introduce the +0/+0 bug for mixed raw+structured payloads).
+  const aiHasStructured = LYRIC_KEYS.some((k) => (ai[k] ?? "").trim());
   return {
     intro: pick(ai.intro, existing.intro),
     verse1: pick(ai.verse1, existing.verse1),
@@ -345,21 +352,53 @@ function mergeLyrics(
     verse2: pick(ai.verse2, existing.verse2),
     bridge: pick(ai.bridge, existing.bridge),
     outro: pick(ai.outro, existing.outro),
-    raw: existing.raw,
+    raw: aiHasStructured ? "" : existing.raw,
   };
+}
+
+/**
+ * Normalize the user's lyrics into structured working sections for optimize.
+ *
+ * Why: the lyric editor's "raw" (freeform paste) mode stores everything in
+ * `raw` and leaves the structured keys empty, while `composeLyricsBody`
+ * prioritizes `raw`. The AI rewrite only writes structured keys and
+ * `mergeLyrics` preserves `raw`, so for raw-mode lyrics the rewrite was both
+ * (a) never shown the real song (the prompt is built from empty sections) and
+ * (b) never surfaced (composeLyricsBody keeps returning the unchanged `raw`).
+ * That made Optimize & Ship report a phantom +0/+0 for every raw-mode track.
+ *
+ * Converting raw → structured (with `raw` cleared) lets the AI rewrite the
+ * actual lyrics and lets the rewritten sections drive composeLyricsBody so the
+ * before/after delta is real. Structured-mode lyrics (raw already empty) pass
+ * through unchanged.
+ */
+function normalizeForOptimize(lyrics: LyricsSections): LyricsSections {
+  const hasStructured = LYRIC_KEYS.some((k) => (lyrics[k] ?? "").trim());
+  if (hasStructured) return lyrics;
+
+  const raw = lyrics.raw?.trim();
+  if (!raw) return lyrics;
+
+  // Headers present → split into real sections; otherwise treat the whole
+  // blob as one verse so the AI still sees (and rewrites) the real text.
+  const parsed = parseLyricsSections(raw);
+  const parsedHasStructured = LYRIC_KEYS.some((k) => (parsed[k] ?? "").trim());
+  if (parsedHasStructured) return parsed;
+  return { ...EMPTY_LYRICS, verse1: raw };
 }
 
 export async function runIntelligentOptimize(
   input: IntelligentOptimizeInput
 ): Promise<IntelligentOptimizeResult> {
   const { project, analysis, lyrics } = input;
+  const working = normalizeForOptimize(lyrics);
 
   // 1. Local + partner-enriched patches (always succeeds).
   const { patches, notes, intelligence } = buildEnrichedPatches(project, analysis);
 
   // Local candidate: fill empty sections from the (patched) creative brief.
   const patchedProject = { ...project, ...patches } as StudioProject;
-  let candidateLyrics = applyConceptToLyrics(patchedProject, lyrics);
+  let candidateLyrics = applyConceptToLyrics(patchedProject, working);
 
   let tier: OptimizeTier =
     intelligence.musixmatch || intelligence.cyanite || intelligence.songstats
@@ -377,7 +416,7 @@ export async function runIntelligentOptimize(
   for (const [backend, run] of attempts) {
     const aiLyrics = await run();
     if (aiLyrics) {
-      candidateLyrics = mergeLyrics(lyrics, aiLyrics);
+      candidateLyrics = mergeLyrics(working, aiLyrics);
       tier = "ai";
       aiBackend = backend;
       break;
