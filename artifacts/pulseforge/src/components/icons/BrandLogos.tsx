@@ -5,6 +5,28 @@ interface LogoProps {
   size?: number;
 }
 
+const PARTNER_LOGO_BASE = `${import.meta.env.BASE_URL}partner-logos/`;
+
+function PartnerImg({
+  file,
+  name,
+  className,
+  size = 28,
+}: LogoProps & { file: string; name: string }) {
+  return (
+    <img
+      src={`${PARTNER_LOGO_BASE}${file}`}
+      width={size}
+      height={size}
+      loading="lazy"
+      decoding="async"
+      className={cn("shrink-0 rounded-lg object-contain", className)}
+      alt={`${name} logo`}
+      aria-label={name}
+    />
+  );
+}
+
 export function PulseForgeLogo({ className, size = 32 }: LogoProps) {
   return (
     <svg
@@ -15,83 +37,33 @@ export function PulseForgeLogo({ className, size = 32 }: LogoProps) {
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <rect width="32" height="32" rx="9" fill="#8B5CF6" />
       <path
         d="M8 22V10l5.5 8.5L19 10v12"
-        stroke="white"
+        stroke="currentColor"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="23.5" cy="19" r="2.5" fill="white" opacity="0.9" />
+      <circle cx="23.5" cy="19" r="2.5" fill="currentColor" opacity="0.9" />
     </svg>
   );
 }
 
 export function MusixmatchLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="Musixmatch"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#FF5E3A" />
-      <path
-        d="M8.5 19.5V8.5h2.4l3.6 6.2 3.6-6.2h2.4v11h-2.3v-6.8l-3.2 5.5h-1.4l-3.2-5.5v6.8H8.5z"
-        fill="white"
-      />
-    </svg>
+    <PartnerImg file="musixmatch.png" name="Musixmatch" className={className} size={size} />
   );
 }
 
 export function CyaniteLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="Cyanite"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#0E1B2A" />
-      <path
-        d="M14 5l7.5 13H6.5L14 5z"
-        fill="url(#cy-grad)"
-      />
-      <path d="M10 20h8l-1.5 3H11.5L10 20z" fill="#22D3EE" opacity="0.85" />
-      <defs>
-        <linearGradient id="cy-grad" x1="14" y1="5" x2="14" y2="18">
-          <stop stopColor="#22D3EE" />
-          <stop stopColor="#0891B2" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <PartnerImg file="cyanite.png" name="Cyanite" className={className} size={size} />
   );
 }
 
 export function SongstatsLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="Songstats"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#1D4ED8" />
-      <rect x="7" y="15" width="2.5" height="6" rx="1" fill="white" opacity="0.9" />
-      <rect x="11" y="11" width="2.5" height="10" rx="1" fill="white" />
-      <rect x="15" y="8" width="2.5" height="13" rx="1" fill="white" />
-      <rect x="19" y="13" width="2.5" height="8" rx="1" fill="#93C5FD" />
-    </svg>
+    <PartnerImg file="songstats.png" name="Songstats" className={className} size={size} />
   );
 }
 
@@ -199,82 +171,23 @@ export function DashboardIcon({ className, size = 28 }: LogoProps) {
 
 export function ElevenLabsLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="ElevenLabs"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#0B0B0F" />
-      <rect x="8" y="8" width="3" height="12" rx="1.5" fill="#F5F5F5" />
-      <rect x="12.5" y="6" width="3" height="16" rx="1.5" fill="#A78BFA" />
-      <rect x="17" y="9" width="3" height="10" rx="1.5" fill="#F5F5F5" />
-    </svg>
+    <PartnerImg file="elevenlabs.png" name="ElevenLabs" className={className} size={size} />
   );
 }
 
 export function LalalLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="LALAL.AI"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#111827" />
-      <circle cx="10" cy="14" r="4" fill="#F97316" />
-      <circle cx="18" cy="14" r="4" fill="#38BDF8" />
-      <path d="M14 10v8" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
+    <PartnerImg file="lalal.png" name="LALAL.AI" className={className} size={size} />
   );
 }
 
 export function N8nLogo({ className, size = 28 }: LogoProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="n8n"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#EA4B71" />
-      <circle cx="8" cy="14" r="2.5" fill="white" />
-      <circle cx="20" cy="8" r="2.5" fill="white" />
-      <circle cx="20" cy="20" r="2.5" fill="white" />
-      <path d="M10.5 13l7-4M10.5 15l7 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <PartnerImg file="n8n.png" name="n8n" className={className} size={size} />;
 }
 
 export function JamBaseLogo({ className, size = 28 }: LogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 28 28"
-      fill="none"
-      className={cn("shrink-0", className)}
-      aria-label="JamBase"
-      role="img"
-    >
-      <rect width="28" height="28" rx="7" fill="#14532D" />
-      <path
-        d="M8 18V10l4 3.5L16 10v8M18 18V10l2 8"
-        stroke="#86EFAC"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <PartnerImg file="jambase.png" name="JamBase" className={className} size={size} />
   );
 }
 

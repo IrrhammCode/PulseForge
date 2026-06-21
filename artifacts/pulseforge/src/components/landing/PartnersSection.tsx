@@ -94,16 +94,11 @@ export function PartnersSection() {
         {PARTNERS.map((partner) => (
           <article
             key={partner.name}
-            className="group glass-card-hover glow-border relative overflow-hidden rounded-2xl p-5 md:p-6"
+            className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-md md:p-6"
           >
-            {/* Gradient bg on hover */}
-            <div
-              className="absolute inset-0 bg-accent/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-            />
-
             <div className="relative z-10">
               {partner.required && (
-                <span className="absolute right-0 top-0 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-light">
+                <span className="absolute right-0 top-0 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-700">
                   Required
                 </span>
               )}
@@ -113,16 +108,16 @@ export function PartnersSection() {
                   <partner.Logo size={36} />
                 </div>
                 <div>
-                  <h3 className="font-bold">{partner.name}</h3>
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                  <h3 className="font-bold text-gray-900">{partner.name}</h3>
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-gray-500">
                     {partner.role}
                   </p>
                 </div>
               </div>
 
-              <p className="text-sm leading-relaxed text-muted">{partner.description}</p>
+              <p className="text-sm leading-relaxed text-gray-600">{partner.description}</p>
               <div className="mt-3 flex items-center gap-1.5">
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${partner.accentColor}`}>
+                <span className="rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-700">
                   {partner.tab}
                 </span>
               </div>

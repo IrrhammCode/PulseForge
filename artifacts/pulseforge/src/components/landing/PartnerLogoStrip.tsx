@@ -28,12 +28,12 @@ export function PartnerLogoStrip() {
         {PARTNERS.map(({ name, Logo, tag }) => (
           <div
             key={name}
-            className="glass-card-hover flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+            className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm"
           >
             <Logo size={22} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-              <p className="text-[10px] uppercase tracking-wider text-muted">{tag}</p>
+              <p className="truncate text-sm font-semibold text-gray-900">{name}</p>
+              <p className="text-[10px] uppercase tracking-wider text-gray-500">{tag}</p>
             </div>
           </div>
         ))}
