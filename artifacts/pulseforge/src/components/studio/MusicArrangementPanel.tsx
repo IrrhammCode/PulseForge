@@ -307,7 +307,8 @@ export function MusicArrangementPanel({ arrangement, onChange }: MusicArrangemen
         className="inline-flex items-center gap-1.5 text-[11px] text-muted hover:text-foreground"
       >
         <SlidersHorizontal className="h-3.5 w-3.5" />
-        Partner pipeline {showPipeline ? "▲" : "▼"}
+        Partner pipeline
+        <ChevronDown className={cn("h-3.5 w-3.5 transition", showPipeline && "rotate-180")} />
       </button>
       {showPipeline && (
         <ul className="space-y-1.5 rounded-xl border border-border/60 bg-surface/40 p-3 text-[11px] text-muted">

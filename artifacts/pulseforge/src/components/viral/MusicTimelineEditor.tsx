@@ -3,6 +3,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   Clapperboard,
   Play,
   Scissors,
@@ -1991,14 +1993,16 @@ export function MusicTimelineEditor({
                       className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] hover:bg-surface-elevated"
                       title="Nudge selected clips left (small)"
                     >
-                      ◀ Nudge
+                      <ChevronLeft className="h-3 w-3" />
+                      Nudge
                     </button>
                     <button
                       onClick={() => nudgeSelected(1)}
                       className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] hover:bg-surface-elevated"
                       title="Nudge selected clips right (small)"
                     >
-                      Nudge ▶
+                      Nudge
+                      <ChevronRight className="h-3 w-3" />
                     </button>
                     <button onClick={copySelected} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] hover:bg-surface-elevated" title="Copy selected (Ctrl/Cmd+C)">
                       Copy
