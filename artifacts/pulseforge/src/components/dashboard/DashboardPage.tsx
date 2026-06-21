@@ -23,7 +23,7 @@ import {
 import { getViralLabLink } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { getRecentActivities, type ActivityItem } from "@/lib/activity";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { fetchCapabilities } from "@/lib/api-client";
 import type { SystemCapabilities } from "@/lib/partners/capabilities";
 
@@ -34,6 +34,28 @@ const PIPELINE_STEPS = [
   { key: "viral" as const, label: "Viral Lab", icon: Flame },
   { key: "launch" as const, label: "Launch", icon: Rocket },
 ];
+
+function SectionHead({
+  title,
+  eyebrow,
+  action,
+}: {
+  title: string;
+  eyebrow?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex items-end justify-between gap-4 border-t-2 border-foreground pt-4">
+      <div>
+        {eyebrow && <p className="landing-eyebrow">{eyebrow}</p>}
+        <h2 className="font-display mt-1 text-2xl uppercase leading-none tracking-tight md:text-3xl">
+          {title}
+        </h2>
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export function DashboardPage() {
   const { projects, ready, create, remove } = useStudioProjects();
@@ -78,269 +100,308 @@ export function DashboardPage() {
     { href: "/help", label: "Studio Guide", desc: "How the pipeline works", icon: Rocket },
   ];
 
+  const activities = getRecentActivities(5);
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-10 lg:px-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12 lg:px-8 2xl:max-w-7xl 3xl:max-w-[96rem] 4xl:max-w-[120rem]">
+      {/* Editorial header */}
+      <div className="flex items-center justify-between gap-4 border-b-2 border-foreground pb-3">
+        <span className="landing-eyebrow flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-foreground" />
+          Dashboard
+        </span>
+        <span className="landing-eyebrow">
+          {caps ? `${caps.tier} tier · ${Object.values(caps.partners).filter(Boolean).length}/7 partners` : "Music Studio OS"}
+        </span>
+      </div>
+
+      <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-            Dashboard
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="font-display text-5xl uppercase leading-[0.9] tracking-tight md:text-6xl lg:text-7xl 2xl:text-8xl">
             {greeting()}
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-muted md:text-base">
+          <p className="mt-4 max-w-lg text-sm text-muted md:text-base">
             Your studio at a glance — projects, pipeline progress, and quick actions.
           </p>
         </div>
         <NewProjectForm onCreate={create} />
       </div>
 
-      {/* Stats Row */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card) => (
+      {/* Stats band — big editorial numbers */}
+      <div className="mt-10 grid grid-cols-2 border-y-2 border-foreground md:grid-cols-4">
+        {statCards.map((card, i) => (
           <div
             key={card.label}
-            className="rounded-2xl border border-border bg-surface-elevated p-4"
+            className={cn(
+              "px-2 py-5 md:px-6",
+              i > 0 && "border-l-2 border-foreground",
+              i === 2 && "border-t-2 border-foreground md:border-t-0",
+              i === 3 && "border-t-2 border-foreground md:border-t-0"
+            )}
           >
-            <div className="flex items-center justify-between">
-              <card.icon className="h-4 w-4 text-accent-light" />
+            <div className="mb-3 flex items-center gap-2">
+              <card.icon className="h-4 w-4 text-foreground" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
+                {card.label}
+              </p>
             </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums">{card.value}</p>
-            <p className="text-[10px] uppercase tracking-wider text-muted">{card.label}</p>
+            <p className="font-display text-4xl tabular-nums leading-none text-foreground md:text-5xl 2xl:text-6xl">
+              {card.value}
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Live Partner Status (strengthened) */}
+      {/* Partner status chips */}
       <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] text-muted">
         {caps ? (
           <>
-            <span className="rounded-full border border-border bg-surface-elevated px-2 py-0.5">
-              Musixmatch: {caps.partners.musixmatch ? "active" : "demo"}
-            </span>
-            <span className="rounded-full border border-border bg-surface-elevated px-2 py-0.5">
-              Cyanite: {caps.partners.cyanite ? "active" : "demo"}
-            </span>
-            <span className="rounded-full border border-border bg-surface-elevated px-2 py-0.5">
-              Songstats: {caps.partners.songstats ? "active" : "demo"}
-            </span>
-            <span className="text-[10px]">{caps.tier} tier • {Object.values(caps.partners).filter(Boolean).length}/7 partners</span>
+            {(["musixmatch", "cyanite", "songstats"] as const).map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-foreground/40 px-2.5 py-0.5 font-medium uppercase tracking-wide"
+              >
+                {p}: {caps.partners[p] ? "active" : "demo"}
+              </span>
+            ))}
           </>
         ) : (
-          <span className="rounded-full border border-border bg-surface-elevated px-2 py-0.5">Partners: loading / demo mode</span>
+          <span className="rounded-full border border-foreground/40 px-2.5 py-0.5 uppercase tracking-wide">
+            Partners: loading / demo mode
+          </span>
         )}
-        <Link href="/integrations" className="text-accent-light hover:underline">Manage →</Link>
+        <Link href="/integrations" className="font-semibold underline-offset-4 hover:underline">
+          Manage →
+        </Link>
       </div>
 
-      {/* Pipeline Overview (High Priority) */}
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Pipeline Overview</h2>
-            <p className="text-xs text-muted">Music Studio OS — 5 stage workflow</p>
-          </div>
-          <Link href="/studio" className="text-xs text-muted hover:text-foreground">View all projects →</Link>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4">
-          <div className="grid grid-cols-5 gap-2">
-            {pipelineOverview.map((step, index) => (
-              <div key={step.key} className="flex flex-col items-center text-center">
-                <div
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-full border",
-                    step.pct > 0 ? "border-accent/40 bg-accent-muted text-accent-light" : "border-border bg-surface text-muted"
-                  )}
-                >
-                  <step.icon className="h-4 w-4" />
-                </div>
-                <p className="mt-2 text-[10px] font-medium">{step.label}</p>
-                <p className="text-[10px] text-muted">{step.pct}%</p>
-                {index < pipelineOverview.length - 1 && (
-                  <div className="mt-1 hidden h-px w-full bg-border md:block" />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-center text-[10px] text-muted">
-            Progress shown across all projects. Create projects to start filling the pipeline.
-          </p>
-        </div>
-      </section>
-
-      {/* Quick Actions (High Priority) */}
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">Quick Actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="group rounded-2xl border border-border bg-surface-elevated p-4 transition hover:border-accent/30"
-            >
-              <action.icon className="h-5 w-5 text-accent-light" />
-              <p className="mt-3 font-semibold group-hover:text-accent-light">{action.label}</p>
-              <p className="mt-1 text-xs text-muted">{action.desc}</p>
+      {/* Pipeline Overview — bold rail */}
+      <section className="mt-12">
+        <SectionHead
+          eyebrow="Workflow"
+          title="Pipeline Overview"
+          action={
+            <Link href="/studio" className="landing-eyebrow whitespace-nowrap hover:underline">
+              View all →
             </Link>
+          }
+        />
+        <div className="grid grid-cols-5 border-2 border-foreground">
+          {pipelineOverview.map((step, index) => (
+            <div
+              key={step.key}
+              className={cn(
+                "flex flex-col items-center gap-2 px-1 py-4 text-center md:gap-3 md:px-2 md:py-6",
+                index > 0 && "border-l-2 border-foreground"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-full border-2 border-foreground md:h-12 md:w-12",
+                  step.pct > 0 ? "bg-foreground text-background" : "bg-transparent text-foreground"
+                )}
+              >
+                <step.icon className="h-4 w-4 md:h-5 md:w-5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-semibold uppercase tracking-wider md:text-[11px]">{step.label}</p>
+                <p className="font-display mt-1 text-xl leading-none tabular-nums md:text-2xl">
+                  {step.pct}
+                  <span className="text-xs md:text-sm">%</span>
+                </p>
+              </div>
+            </div>
           ))}
         </div>
+        <p className="mt-3 text-[11px] text-muted">
+          Progress shown across all projects. Create projects to start filling the pipeline.
+        </p>
       </section>
 
-      {/* Recent Projects */}
-      <section className="mt-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent Projects</h2>
-          {projects.length > 3 && (
-            <Link href="/studio" className="text-xs text-muted hover:text-foreground">
-              See all {projects.length} →
-            </Link>
+      {/* Main grid — content + side rail */}
+      <div className="mt-12 grid gap-10 lg:grid-cols-[1.8fr_1fr] lg:gap-12">
+        {/* Left: Recent projects + downstream */}
+        <div>
+          <SectionHead
+            eyebrow="Library"
+            title="Recent Projects"
+            action={
+              projects.length > 3 ? (
+                <Link href="/studio" className="landing-eyebrow whitespace-nowrap hover:underline">
+                  See all {projects.length} →
+                </Link>
+              ) : undefined
+            }
+          />
+
+          {!ready && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 animate-pulse rounded-2xl bg-border/50" />
+              ))}
+            </div>
+          )}
+
+          {ready && recent.length === 0 && (
+            <div className="border-2 border-dashed border-foreground p-6">
+              <h3 className="font-display text-2xl uppercase tracking-tight">No projects yet</h3>
+              <p className="mt-2 text-sm text-muted">
+                Start your Music Studio OS journey. Choose an option below to begin the Write → Produce →
+                Analyze → Viral Lab → Launch pipeline.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {[
+                  { href: "/analyze", label: "Try with Demo Track" },
+                  { href: "/studio", label: "Start from Template" },
+                  { href: "/help", label: "Watch 2-min intro" },
+                ].map((o) => (
+                  <Link
+                    key={o.href}
+                    href={o.href}
+                    className="border-2 border-foreground p-3 text-center text-sm font-semibold transition hover:bg-foreground hover:text-background"
+                  >
+                    {o.label}
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-5">
+                <NewProjectForm onCreate={create} />
+              </div>
+            </div>
+          )}
+
+          {ready && recent.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {recent.map((project) => (
+                <ProjectCard key={project.id} project={project} onDelete={handleDelete} />
+              ))}
+            </div>
+          )}
+
+          {/* Viral Lab candidates */}
+          {ready && viralCandidates.length > 0 && (
+            <section className="mt-12">
+              <SectionHead
+                eyebrow={`${stats.viralLabReady} ready for 1M sim`}
+                title="Viral Lab Candidates"
+                action={
+                  <Link href="/viral" className="landing-eyebrow whitespace-nowrap hover:underline">
+                    Open Viral Lab →
+                  </Link>
+                }
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {viralCandidates.slice(0, 4).map((c) => (
+                  <Link
+                    key={c.projectId}
+                    href={getViralLabLink(c.projectId)}
+                    className="group border-2 border-foreground p-4 transition hover:bg-foreground hover:text-background"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Flame className="h-4 w-4" />
+                      <p className="truncate font-semibold">{c.title}</p>
+                    </div>
+                    <p className="mt-2 text-xs text-muted group-hover:text-background/70">
+                      {c.viralScore != null
+                        ? `Viral ${c.viralScore}`
+                        : c.hitScore != null
+                          ? `Hit ${c.hitScore}`
+                          : "Not analyzed yet"}
+                      {c.prob1M != null && ` · ${c.prob1M}% chance 1M`}
+                      {c.viralStale && " · stale"}
+                      {c.hasDemo ? " · demo ready" : " · no demo"}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Launch-ready banner */}
+          {stats.readyProjects > 0 && (
+            <div className="mt-10 flex flex-col gap-3 border-2 border-foreground bg-foreground p-6 text-background sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-display text-2xl uppercase tracking-tight">
+                  {stats.readyProjects} project{stats.readyProjects > 1 ? "s" : ""} launch-ready
+                </p>
+                <p className="mt-1 text-xs text-background/70">
+                  Open the Launch tab in your project to export the release pack.
+                </p>
+              </div>
+              <Link
+                href="/studio"
+                className="inline-flex shrink-0 items-center gap-1 border-2 border-background px-4 py-2 text-xs font-semibold uppercase tracking-wide transition hover:bg-background hover:text-foreground"
+              >
+                Open studio <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
           )}
         </div>
 
-        {!ready && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 animate-pulse rounded-2xl bg-border/50" />
-            ))}
-          </div>
-        )}
-
-        {ready && recent.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-6">
-            <h3 className="font-semibold">No projects yet</h3>
-            <p className="mt-1 text-sm text-muted">
-              Start your Music Studio OS journey. Choose an option below to begin the Write → Produce → Analyze → Viral Lab → Launch pipeline.
-            </p>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <Link
-                href="/analyze"
-                className="rounded-xl border border-accent/30 bg-accent-muted p-3 text-center text-sm font-medium text-accent-light hover:bg-accent-muted/80"
-              >
-                Try with Demo Track
-              </Link>
-              <Link
-                href="/studio"
-                className="rounded-xl border border-border bg-surface-elevated p-3 text-center text-sm font-medium hover:border-accent/30"
-              >
-                Start from Template
-              </Link>
-              <Link
-                href="/help"
-                className="rounded-xl border border-border bg-surface-elevated p-3 text-center text-sm font-medium hover:border-accent/30"
-              >
-                Watch 2-min intro
-              </Link>
-            </div>
-
-            <div className="mt-4">
-              <NewProjectForm onCreate={create} />
-            </div>
-          </div>
-        )}
-
-        {ready && recent.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recent.map((project) => (
-              <ProjectCard key={project.id} project={project} onDelete={handleDelete} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Recent Activity (populated from analyze/viral/project actions) */}
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">Recent Activity</h2>
-        {(() => {
-          const activities = getRecentActivities(5);
-          if (activities.length === 0) {
-            return (
-              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted">
-                Run Quick Analyze or Viral Lab — your actions will appear here.
-              </div>
-            );
-          }
-          return (
-            <div className="space-y-2">
-              {activities.map((a: ActivityItem) => (
+        {/* Right rail: Quick actions + activity */}
+        <aside className="space-y-12">
+          <section>
+            <SectionHead eyebrow="Shortcuts" title="Quick Actions" />
+            <div className="border-2 border-foreground">
+              {quickActions.map((action, i) => (
                 <Link
-                  key={a.id}
-                  href={a.link || "#"}
-                  className="flex items-center justify-between rounded-xl border border-border bg-surface-elevated px-4 py-2.5 text-sm hover:border-accent/30"
+                  key={action.href}
+                  href={action.href}
+                  className={cn(
+                    "group flex items-start gap-3 p-4 transition hover:bg-foreground hover:text-background",
+                    i > 0 && "border-t-2 border-foreground"
+                  )}
                 >
-                  <div>
-                    <span className="font-medium">{a.title}</span>
-                    {a.subtitle && <span className="ml-2 text-muted">{a.subtitle}</span>}
+                  <action.icon className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-semibold">{action.label}</p>
+                    <p className="mt-0.5 text-xs text-muted group-hover:text-background/70">
+                      {action.desc}
+                    </p>
                   </div>
-                  <div className="text-right text-xs text-muted">
-                    {a.score != null && <span className="mr-2 text-accent-light">{a.score}</span>}
-                    {new Date(a.at).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </div>
+                  <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ))}
             </div>
-          );
-        })()}
-      </section>
+          </section>
 
-      {/* Keep existing viral and launch ready banners if data exists */}
-      {ready && viralCandidates.length > 0 && (
-        <section className="mt-8">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">Viral Lab Candidates</h2>
-              <p className="text-xs text-muted">
-                {stats.viralLabReady} project{stats.viralLabReady !== 1 ? "s" : ""} ready for 1M sim
-              </p>
-            </div>
-            <Link
-              href="/viral"
-              className="inline-flex items-center gap-1 text-xs font-medium text-accent-light hover:text-foreground"
-            >
-              Open Viral Lab <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {viralCandidates.slice(0, 3).map((c) => (
-              <Link
-                key={c.projectId}
-                href={getViralLabLink(c.projectId)}
-                className="group rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/5 to-transparent p-4 transition hover:border-accent/40"
-              >
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-accent-light" />
-                  <p className="truncate font-semibold group-hover:text-accent-light">
-                    {c.title}
-                  </p>
-                </div>
-                <p className="mt-2 text-xs text-muted">
-                  {c.viralScore != null ? `Viral ${c.viralScore}` : c.hitScore != null ? `Hit ${c.hitScore}` : "Not analyzed yet"}
-                  {c.prob1M != null && ` · ${c.prob1M}% chance 1M`}
-                  {c.viralStale && " · stale"}
-                  {c.hasDemo ? " · demo ready" : " · no demo"}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {stats.readyProjects > 0 && (
-        <div className="mt-8 rounded-2xl border border-success/30 bg-success/5 p-5">
-          <p className="text-sm font-medium text-success">
-            {stats.readyProjects} project{stats.readyProjects > 1 ? "s" : ""} launch-ready
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Open Launch tab in your project to export the release pack.
-          </p>
-          <Link
-            href="/studio"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent-light hover:text-foreground"
-          >
-            Open studio <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
-      )}
+          <section>
+            <SectionHead eyebrow="Feed" title="Recent Activity" />
+            {activities.length === 0 ? (
+              <div className="border-2 border-dashed border-foreground p-5 text-sm text-muted">
+                Run Quick Analyze or Viral Lab — your actions will appear here.
+              </div>
+            ) : (
+              <div className="border-2 border-foreground">
+                {activities.map((a: ActivityItem, i) => (
+                  <Link
+                    key={a.id}
+                    href={a.link || "#"}
+                    className={cn(
+                      "flex items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-foreground hover:text-background",
+                      i > 0 && "border-t-2 border-foreground"
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <span className="font-medium">{a.title}</span>
+                      {a.subtitle && (
+                        <span className="ml-2 text-muted group-hover:text-background/70">{a.subtitle}</span>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right text-xs text-muted">
+                      {a.score != null && <span className="mr-2 font-semibold text-foreground">{a.score}</span>}
+                      {new Date(a.at).toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

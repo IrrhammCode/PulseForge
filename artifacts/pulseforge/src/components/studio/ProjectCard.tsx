@@ -21,10 +21,10 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
   });
 
   return (
-    <article className="group flex flex-col rounded-2xl border border-border bg-surface-elevated p-5 transition hover:border-accent/25">
+    <article className="group flex flex-col border-2 border-foreground bg-surface p-5 transition hover:-translate-y-0.5">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-muted">
-          <Music2 className="h-5 w-5 text-accent-light" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-foreground">
+          <Music2 className="h-5 w-5 text-foreground" />
         </div>
         <span
           className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${status.className}`}
@@ -44,7 +44,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
       <p className="mt-3 text-[11px] text-muted">Updated {updated}</p>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
+      <div className="mt-4 flex items-center gap-2 border-t-2 border-foreground pt-4">
         <Link
           href={`/studio/${project.id}/write`}
           className="btn-primary flex-1 !py-2 text-xs"
@@ -55,7 +55,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
         {canViral && (
           <Link
             href={getViralLabLink(project.id)}
-            className="rounded-xl border border-accent/30 bg-accent-muted p-2 text-accent-light transition hover:border-accent/50"
+            className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
             aria-label={`Viral Lab for ${project.title}`}
             title="Viral Lab"
           >
@@ -65,7 +65,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
         <button
           type="button"
           onClick={() => onDelete(project.id)}
-          className="rounded-xl border border-border p-2 text-muted transition hover:border-danger/30 hover:text-danger"
+          className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
           aria-label={`Delete ${project.title}`}
         >
           <Trash2 className="h-4 w-4" />
