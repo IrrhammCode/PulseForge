@@ -9,9 +9,14 @@ The entire PulseForge look is driven by `@theme` CSS custom-property tokens plus
 handful of utility classes in `artifacts/pulseforge/src/app/globals.css` (Tailwind v4,
 single theme — no `.dark` class / no theme toggle).
 
-**Current aesthetic: "The Verge"-inspired dark editorial, flat depth.** Canvas near-black,
-Jelly-Mint + Ultraviolet accents, Anton display headlines, IBM Plex Mono uppercase
-labels/buttons, pill radii. **Hard rule: NO gradients / shadows / glows.** The shared
+**Current aesthetic: LIGHT editorial, flat depth.** White canvas (`--color-background #fff`),
+near-black ink (`--color-foreground #131313`), Anton display headlines, IBM Plex Mono uppercase
+labels/buttons, pill radii. **Accent split for legibility:** `--color-accent` = Jelly-Mint
+`#3cffd0` is FILLS only (buttons/bars/gauge); `--color-accent-light` = Ultraviolet `#5200ff` is
+TEXT/STROKES (links, eyebrows, `gradient-text`, hover borders) — mint text/hairlines are
+unreadable on white, so any `text-accent`/`border-accent` that needs contrast must use
+`*-accent-light`. (Was dark near-black `#131313` canvas + mint accents before 2026-06-21.)
+**Hard rule: NO gradients / shadows / glows.** The shared
 helper classes (`gradient-text`, `glow-border`, `gradient-border-animated`, `hero-glow*`,
 `glass-card*`) are already flattened in globals.css, so those class names are harmless
 no-ops on components. The real violations are **inline Tailwind utilities**

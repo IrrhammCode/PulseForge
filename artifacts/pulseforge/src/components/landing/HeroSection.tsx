@@ -48,7 +48,7 @@ export function HeroSection() {
             </WelcomeLink>
             <WelcomeLink
               href="/viral"
-              className="inline-flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-2.5 text-sm font-semibold text-orange-400 backdrop-blur-sm transition-all duration-200 hover:border-orange-500/40 hover:bg-orange-500/10"
+              className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-all duration-200 hover:border-orange-500/50 hover:bg-orange-500/15"
             >
               <Flame className="h-4 w-4" />
               Viral Lab

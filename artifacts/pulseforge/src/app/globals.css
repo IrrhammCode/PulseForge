@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  /* === THE VERGE — dark editorial hazard system === */
-  --color-background: #131313;        /* Canvas Black */
-  --color-surface: #131313;           /* cards = canvas + 1px border */
-  --color-surface-elevated: #2d2d2d;  /* Surface Slate */
-  --color-border: #313131;            /* Image Frame hairline */
-  --color-border-subtle: #232323;
-  --color-foreground: #ffffff;        /* Hazard White */
-  --color-muted: #949494;             /* Secondary Text / metadata */
+  /* === LIGHT editorial system (white canvas, dark ink) === */
+  --color-background: #ffffff;        /* Canvas White */
+  --color-surface: #ffffff;           /* cards = canvas + 1px border */
+  --color-surface-elevated: #f4f4f5;  /* Surface light gray */
+  --color-border: #e4e4e7;            /* hairline */
+  --color-border-subtle: #efeff1;
+  --color-foreground: #131313;        /* Ink — near-black text */
+  --color-muted: #6b6b72;             /* Secondary text / metadata */
 
-  --color-accent: #3cffd0;            /* Jelly Mint */
-  --color-accent-light: #3cffd0;
-  --color-accent-muted: #3cffd01f;
+  --color-accent: #3cffd0;            /* Jelly Mint — fills */
+  --color-accent-light: #5200ff;      /* Ultraviolet — text/links */
+  --color-accent-muted: #5200ff1f;
 
   --color-purple: #5200ff;            /* Verge Ultraviolet */
-  --color-purple-light: #6a2bff;
+  --color-purple-light: #5200ff;
   --color-blue: #5200ff;
   --color-blue-light: #3860be;        /* Deep Link Blue (hover) */
   --color-cyan: #3cffd0;
   --color-emerald: #3cffd0;
-  --color-success: #3cffd0;
-  --color-warning: #ffd23c;           /* hazard yellow tile */
-  --color-danger: #ff4d6d;            /* hazard pink */
+  --color-success: #16a34a;           /* readable green */
+  --color-warning: #d97706;           /* readable amber */
+  --color-danger: #e11d48;            /* readable rose */
 
   --font-sans: "Inter", Helvetica, Arial, sans-serif;
   --font-display: "Anton", Impact, Helvetica, sans-serif;
@@ -82,7 +82,7 @@
   }
 
   .card-interactive {
-    @apply transition-colors duration-150 hover:border-accent;
+    @apply transition-colors duration-150 hover:border-accent-light;
   }
 
   .text-accent {
@@ -105,21 +105,21 @@
 
   /* Primary — Jelly Mint pill */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-bold uppercase text-black transition-all duration-150 hover:bg-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-bold uppercase text-black transition-all duration-150 hover:bg-foreground hover:text-background;
     font-family: var(--font-mono);
     letter-spacing: 0.1em;
   }
 
   /* Secondary — dark slate pill */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface-elevated px-6 py-2.5 text-sm font-semibold uppercase text-foreground transition-all duration-150 hover:bg-white hover:text-black hover:border-white;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface-elevated px-6 py-2.5 text-sm font-semibold uppercase text-foreground transition-all duration-150 hover:bg-foreground hover:text-background hover:border-foreground;
     font-family: var(--font-mono);
     letter-spacing: 0.1em;
   }
 
   /* Tertiary — outlined mint pill */
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-accent bg-transparent px-5 py-2 text-xs font-bold uppercase text-accent transition-colors duration-150 hover:bg-accent hover:text-black;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-accent-light bg-transparent px-5 py-2 text-xs font-bold uppercase text-accent-light transition-colors duration-150 hover:bg-accent-light hover:text-white;
     font-family: var(--font-mono);
     letter-spacing: 0.12em;
   }
@@ -132,7 +132,7 @@
 
   /* "Gradient" text is solid color here — the Verge uses zero gradients */
   .gradient-text {
-    color: var(--color-accent);
+    color: var(--color-accent-light);
   }
 
   .gradient-text-warm {
@@ -141,19 +141,19 @@
 
   /* Card surfaces — flat slate with hairline, color/border carries depth */
   .glass-card {
-    background: #1a1a1a;
+    background: #f7f7f8;
     border: 1px solid var(--color-border);
   }
 
   .glass-card-hover {
-    background: #1a1a1a;
+    background: #f7f7f8;
     border: 1px solid var(--color-border);
     transition: border-color 0.15s ease, background 0.15s ease;
   }
 
   .glass-card-hover:hover {
-    border-color: var(--color-accent);
-    background: #1d1d1d;
+    border-color: var(--color-accent-light);
+    background: #efeff1;
   }
 
   /* Hairline glow border → static mint hairline on hover, no glow */
@@ -172,13 +172,13 @@
   }
 
   .glow-border:hover::before {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-light);
   }
 
   /* Animated gradient border → static mint hairline (no gradients) */
   .gradient-border-animated {
     position: relative;
-    border: 1px solid var(--color-accent);
+    border: 1px solid var(--color-accent-light);
   }
 
   /* Decorative orbs/glows are disabled — the Verge is dead flat */
@@ -196,8 +196,8 @@
   /* Subtle structural grid, near-invisible */
   .grid-pattern {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
     background-size: 64px 64px;
   }
 
@@ -205,9 +205,9 @@
   .shimmer {
     background: linear-gradient(
       90deg,
-      #1a1a1a 0%,
-      #2d2d2d 50%,
-      #1a1a1a 100%
+      #ececee 0%,
+      #f6f6f7 50%,
+      #ececee 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
