@@ -9,6 +9,16 @@ The entire PulseForge look is driven by `@theme` CSS custom-property tokens plus
 handful of utility classes in `artifacts/pulseforge/src/app/globals.css` (Tailwind v4,
 single theme — no `.dark` class / no theme toggle).
 
+**Current aesthetic: "The Verge"-inspired dark editorial, flat depth.** Canvas near-black,
+Jelly-Mint + Ultraviolet accents, Anton display headlines, IBM Plex Mono uppercase
+labels/buttons, pill radii. **Hard rule: NO gradients / shadows / glows.** The shared
+helper classes (`gradient-text`, `glow-border`, `gradient-border-animated`, `hero-glow*`,
+`glass-card*`) are already flattened in globals.css, so those class names are harmless
+no-ops on components. The real violations are **inline Tailwind utilities**
+(`bg-gradient-to-*`, `shadow-*`, `group-hover:shadow-*`) — these are NOT controlled by
+globals.css, so grep components for them after any visual change and flatten to solid
+fills / 1px tokenized borders.
+
 To switch the whole app's look (e.g. dark → white aesthetic), change in that one file:
 - The `@theme` tokens (`--color-background/surface/foreground/muted/border/accent/...`).
 - Utility classes that **hardcode** colors instead of using tokens: `.glass-card`,

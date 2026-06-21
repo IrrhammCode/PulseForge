@@ -102,7 +102,7 @@ export function FeaturesSection() {
           >
             {/* Subtle gradient bg on hover */}
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 transition-opacity duration-500 group-hover:opacity-100`}
+              className="absolute inset-0 bg-accent/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
             />
 
             <div className="relative z-10">

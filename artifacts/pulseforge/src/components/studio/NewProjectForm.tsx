@@ -70,7 +70,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
             <h2 className="text-lg font-semibold">New studio project</h2>
             <p className="mt-1 text-sm text-muted">How do you want to start?</p>
           </div>
-          <button type="button" onClick={handleClose} className="text-muted">✕</button>
+          <button type="button" onClick={handleClose} className="text-muted">×</button>
         </div>
 
         <div className="mt-5 flex flex-col gap-3">

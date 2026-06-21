@@ -123,7 +123,7 @@ export function StudioAnalyzePanel({
         URL.revokeObjectURL(url);
       }
       if (onUpdateStems) onUpdateStems({ stemSource: "musixmatch" });
-      alert("✅ Auto Fix + Generate done!");
+      alert("Auto Fix + Generate done!");
     } catch (e: any) {
       alert("Fix done, generate failed: " + (e.message || e));
     }
@@ -193,7 +193,7 @@ export function StudioAnalyzePanel({
                   className="btn-primary bg-green-600 hover:bg-green-700"
                   title="Auto Fix + Generate"
                 >
-                  🚀 Auto Fix + Generate
+                  Auto Fix + Generate
                 </button>
                 {saveFullSongAndOpenProduce && (
                   <button

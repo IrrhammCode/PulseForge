@@ -278,7 +278,7 @@ export default function AnalyzePage() {
 
             {analysis.recommendations?.length > 0 && (
               <p className="mt-3 text-sm text-muted line-clamp-2">
-                💡 {analysis.recommendations[0].description}
+                {analysis.recommendations[0].description}
               </p>
             )}
           </div>

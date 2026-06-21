@@ -48,7 +48,7 @@ export function HeroSection() {
             </WelcomeLink>
             <WelcomeLink
               href="/viral"
-              className="inline-flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-2.5 text-sm font-semibold text-orange-400 backdrop-blur-sm transition-all duration-200 hover:border-orange-500/40 hover:bg-orange-500/10 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]"
+              className="inline-flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-2.5 text-sm font-semibold text-orange-400 backdrop-blur-sm transition-all duration-200 hover:border-orange-500/40 hover:bg-orange-500/10"
             >
               <Flame className="h-4 w-4" />
               Viral Lab
@@ -62,7 +62,7 @@ export function HeroSection() {
 
         {/* Right: Live preview card */}
         <div className="w-full animate-slide-up lg:max-w-md lg:justify-self-end xl:max-w-lg" style={{ animationDelay: "0.2s" }}>
-          <div className="glass-card-hover overflow-hidden rounded-2xl shadow-2xl shadow-accent/5">
+          <div className="glass-card-hover overflow-hidden rounded-2xl">
             {/* Window chrome */}
             <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 px-5 py-3">
               <div className="flex items-center gap-1.5">
@@ -86,7 +86,7 @@ export function HeroSection() {
                   <p className="mt-1 truncate text-base font-semibold">Midnight Drive</p>
                   <p className="truncate text-sm text-muted">Nova Ray · Indie Pop</p>
                 </div>
-                <span className="shrink-0 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-success shadow-[0_0_12px_rgba(52,211,153,0.1)]">
+                <span className="shrink-0 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-success">
                   Promising
                 </span>
               </div>
@@ -109,7 +109,7 @@ export function HeroSection() {
                       </div>
                       <div className="h-1.5 overflow-hidden rounded-full bg-border/60">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${bar.color}`}
+                          className="h-full rounded-full bg-accent"
                           style={{ width: `${bar.value}%`, animation: "barGrow 1s ease-out both" }}
                         />
                       </div>
@@ -121,9 +121,9 @@ export function HeroSection() {
               {/* Bottom stats */}
               <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border/40 pt-5">
                 {[
-                  { label: "1M Chance", value: "67%", icon: "📈" },
-                  { label: "Median", value: "11w", icon: "📅" },
-                  { label: "Hook", value: "85", icon: "🎵" },
+                  { label: "1M Chance", value: "67%" },
+                  { label: "Median", value: "11w" },
+                  { label: "Hook", value: "85" },
                 ].map((stat) => (
                   <div key={stat.label} className="glass-card rounded-xl px-2 py-2.5 text-center">
                     <p className="text-base font-bold tabular-nums text-accent-light">

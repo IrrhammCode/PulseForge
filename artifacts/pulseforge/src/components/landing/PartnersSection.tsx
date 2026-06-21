@@ -98,12 +98,12 @@ export function PartnersSection() {
           >
             {/* Gradient bg on hover */}
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${partner.gradient} opacity-0 transition-opacity duration-500 group-hover:opacity-100`}
+              className="absolute inset-0 bg-accent/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
             />
 
             <div className="relative z-10">
               {partner.required && (
-                <span className="absolute right-0 top-0 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-light shadow-[0_0_12px_rgba(139,92,246,0.15)]">
+                <span className="absolute right-0 top-0 rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-light">
                   Required
                 </span>
               )}

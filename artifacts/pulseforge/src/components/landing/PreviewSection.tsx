@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { WelcomeLink } from "@/components/welcome/WelcomeLink";
 import { SectionShell } from "@/components/landing/SectionShell";
 import {
@@ -30,15 +30,15 @@ export function PreviewSection() {
       }
       description="A single source of truth before you ship — no scattered tools."
     >
-      <div className="glass-card-hover overflow-hidden rounded-2xl shadow-2xl shadow-accent/5">
+      <div className="glass-card-hover overflow-hidden rounded-2xl">
         <div className="grid lg:grid-cols-2">
           {/* Left: Checklist */}
           <div className="flex flex-col justify-center border-b border-border/40 p-6 md:p-8 lg:border-b-0 lg:border-r lg:border-border/40">
             <ul className="space-y-3">
               {REPORT_ITEMS.map((item, i) => (
                 <li key={item} className="flex items-start gap-3 text-sm animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
-                  <span className="mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent-light">
-                    ✓
+                  <span className="mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent-light">
+                    <Check className="h-3 w-3" />
                   </span>
                   <span className="leading-relaxed text-muted">{item}</span>
                 </li>
@@ -55,7 +55,7 @@ export function PreviewSection() {
             {/* Track card */}
             <div className="glass-card rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-blue-500 text-white font-bold text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-black font-bold text-sm">
                   MD
                 </div>
                 <div className="min-w-0 flex-1">
@@ -79,7 +79,7 @@ export function PreviewSection() {
                   {[35, 48, 42, 60, 55, 72, 68, 85].map((h, i) => (
                     <div
                       key={i}
-                      className="flex-1 rounded-sm bg-gradient-to-t from-accent/40 to-accent/80 transition-all duration-300 hover:from-accent/60 hover:to-accent"
+                      className="flex-1 rounded-sm bg-accent/70 transition-all duration-300 hover:bg-accent"
                       style={{ height: `${h}%`, animation: "barGrow 0.8s ease-out both", animationDelay: `${i * 80}ms` }}
                     />
                   ))}
@@ -91,10 +91,10 @@ export function PreviewSection() {
                 </p>
                 <div className="mt-3 space-y-2">
                   <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
-                    <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500" style={{ width: "78%", animation: "barGrow 1s ease-out both" }} />
+                    <div className="h-full rounded-full bg-accent" style={{ width: "78%", animation: "barGrow 1s ease-out both" }} />
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
-                    <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" style={{ width: "62%", animation: "barGrow 1s ease-out 0.2s both" }} />
+                    <div className="h-full rounded-full bg-accent" style={{ width: "62%", animation: "barGrow 1s ease-out 0.2s both" }} />
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-1.5">

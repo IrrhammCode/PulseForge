@@ -44,13 +44,13 @@ function NavLink({
         "group relative flex items-start gap-3 rounded-xl px-3 py-2.5 transition-all duration-200",
         nested ? "pl-4" : "",
         active
-          ? "bg-accent/10 text-accent-light shadow-[inset_0_0_0_1px_rgba(139,92,246,0.15)]"
+          ? "bg-accent/10 text-accent-light"
           : "text-muted hover:bg-surface-elevated hover:text-foreground"
       )}
     >
       {/* Active indicator bar */}
       {active && (
-        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-accent" />
       )}
       <Icon
         className={cn(
@@ -264,14 +264,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search projects..."
-            className="w-full rounded-xl border border-border/60 bg-surface/60 py-2 pl-9 pr-3 text-sm placeholder:text-muted/60 transition-all duration-200 focus:outline-none focus:border-accent/40 focus:bg-surface focus:ring-1 focus:ring-accent/20 focus:shadow-[0_0_12px_rgba(139,92,246,0.08)]"
+            className="w-full rounded-xl border border-border/60 bg-surface/60 py-2 pl-9 pr-3 text-sm placeholder:text-muted/60 transition-all duration-200 focus:outline-none focus:border-accent/40 focus:bg-surface focus:ring-1 focus:ring-accent/20"
             aria-label="Global search"
           />
         </div>
 
         {/* Search results dropdown */}
         {searchTerm && (
-          <div className="mt-2 glass-card rounded-xl p-2.5 text-xs shadow-xl shadow-black/20">
+          <div className="mt-2 glass-card rounded-xl p-2.5 text-xs">
             <GlobalSearchResults
               query={searchTerm}
               pathname={pathname}
@@ -330,7 +330,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Footer badge */}
       <div className="border-t border-border/40 px-4 py-4">
         <div className="flex items-center gap-2 rounded-xl bg-accent/5 border border-accent/10 px-3 py-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-accent/20 text-[10px]">✦</span>
+          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-accent/20"><Sparkles className="h-3 w-3 text-accent-light" /></span>
           <div>
             <p className="text-[11px] font-semibold text-accent-light">Musicathon 2026</p>
             <p className="text-[10px] text-muted">Official entry</p>
@@ -362,7 +362,7 @@ export function AppSidebar({ open, onClose }: AppSidebarProps) {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-[280px] border-r border-border/40 bg-surface/95 backdrop-blur-2xl shadow-2xl shadow-black/40 transition-transform duration-300 ease-out lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-[280px] border-r border-border/40 bg-surface/95 backdrop-blur-2xl transition-transform duration-300 ease-out lg:hidden",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >

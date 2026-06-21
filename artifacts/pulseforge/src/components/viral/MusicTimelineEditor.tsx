@@ -1932,7 +1932,7 @@ export function MusicTimelineEditor({
                   )}
                   title="Metronome / click track (production timing)"
                 >
-                  ♪ Click
+                  Click
                 </button>
 
                 {/* Ripple mode and selection tools - wajib NLE editing */}
@@ -2334,10 +2334,10 @@ export function MusicTimelineEditor({
                     )}
                     {clipAudios?.[clip.sectionId] && (
                       <span
-                        className="absolute top-0.5 left-0.5 px-0.5 rounded bg-accent text-[7px] leading-none text-white font-bold"
+                        className="absolute top-0.5 left-0.5 px-0.5 rounded bg-accent text-[7px] leading-none text-black font-bold tracking-wider"
                         title="Custom audio attached (will play in mix)"
                       >
-                        🎤
+                        VOX
                       </span>
                     )}
                     {/* Per-clip gain (wajib NLE - separate from lane vol) */}
@@ -2515,10 +2515,10 @@ export function MusicTimelineEditor({
                           )}
                           {clipAudios?.[clip.sectionId] && (
                             <span
-                              className="absolute top-0.5 left-0.5 px-0.5 rounded bg-accent text-[7px] leading-none text-white font-bold z-10"
+                              className="absolute top-0.5 left-0.5 px-0.5 rounded bg-accent text-[7px] leading-none text-black font-bold z-10 tracking-wider"
                               title="Custom audio attached (AI vocal / take)"
                             >
-                              🎤
+                              VOX
                             </span>
                           )}
 
@@ -2598,7 +2598,7 @@ export function MusicTimelineEditor({
           <div className="bg-surface-elevated rounded-2xl border border-border p-6 w-[340px] text-sm" onClick={e => e.stopPropagation()}>
             <div className="font-semibold mb-4 flex items-center justify-between">
               Export Settings
-              <button onClick={() => setShowExportDialog(false)} className="text-muted">✕</button>
+              <button onClick={() => setShowExportDialog(false)} className="text-muted">×</button>
             </div>
 
             <div className="space-y-4">
@@ -2680,29 +2680,29 @@ export function MusicTimelineEditor({
             <>
               <div className="my-1 h-px bg-border/60" />
               <button className="block w-full px-3 py-1.5 text-left hover:bg-accent/10" onClick={contextAiVocal}>
-                ✨ Generate short AI Vocal (ElevenLabs TTS)
+                Generate short AI Vocal (ElevenLabs TTS)
               </button>
             </>
           )}
           {onOpenSectionEditor && (
             <button className="block w-full px-3 py-1.5 text-left bg-accent/10 hover:bg-accent/20 text-accent-light" onClick={contextOpenEditor}>
-              🎵 Edit & Regenerate Section (Lyrics + Prompt)
+              Edit & Regenerate Section (Lyrics + Prompt)
             </button>
           )}
           {onReplaceVocalsForSection && (
             <button className="block w-full px-3 py-1.5 text-left hover:bg-accent/10" onClick={contextReplaceVocals}>
-              🎤 Replace Vocals Only (Stem Replacement)
+              Replace Vocals Only (Stem Replacement)
             </button>
           )}
           {onBounceSection && (
             <button className="block w-full px-3 py-1.5 text-left hover:bg-accent/10" onClick={contextBounceSection}>
-              ⬇️ Bounce / Export this Section only
+              Bounce / Export this Section only
             </button>
           )}
 
           {onAttachAudioToSection && (
             <button className="block w-full px-3 py-1.5 text-left hover:bg-accent/10" onClick={contextUploadAudio}>
-              📁 Upload / Replace audio for this clip
+              Upload / Replace audio for this clip
             </button>
           )}
           {onDetachClipAudio && clipAudios?.[contextMenu?.sectionId || ''] && (

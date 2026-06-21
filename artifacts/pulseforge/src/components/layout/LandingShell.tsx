@@ -23,7 +23,7 @@ export function LandingShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-[10px] font-medium text-accent-light md:inline-block">
-              ✦ Musicathon 2026
+              Musicathon 2026
             </span>
             <WelcomeLink href="/studio" className="btn-primary !px-3.5 !py-2 text-xs sm:text-sm">
               Open Studio

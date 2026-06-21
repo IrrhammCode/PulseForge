@@ -1,12 +1,13 @@
 
+import { Link2, BarChart3, Target, Zap } from "lucide-react";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { cn } from "@/lib/utils";
 
 const STATS = [
-  { value: 7, suffix: "", label: "Partner APIs", detail: "Musixmatch · Cyanite · Songstats + 4 more", icon: "🔗" },
-  { value: 16, suffix: "w", label: "Week Forecast", detail: "Monte Carlo simulation", icon: "📊" },
-  { value: 1, suffix: "M", label: "Listener Goal", detail: "Probability scoring", icon: "🎯" },
-  { value: 30, suffix: "s", prefix: "<", label: "Report Time", detail: "Search to full dashboard", icon: "⚡" },
+  { value: 7, suffix: "", label: "Partner APIs", detail: "Musixmatch · Cyanite · Songstats + 4 more", icon: Link2 },
+  { value: 16, suffix: "w", label: "Week Forecast", detail: "Monte Carlo simulation", icon: BarChart3 },
+  { value: 1, suffix: "M", label: "Listener Goal", detail: "Probability scoring", icon: Target },
+  { value: 30, suffix: "s", prefix: "<", label: "Report Time", detail: "Search to full dashboard", icon: Zap },
 ];
 
 export function StatsBar() {
@@ -21,6 +22,7 @@ export function StatsBar() {
 
 function StatItem({ stat, index }: { stat: typeof STATS[number]; index: number }) {
   const count = useCountUp(stat.value, 1200, true);
+  const Icon = stat.icon;
   return (
     <div
       className={cn(
@@ -29,7 +31,9 @@ function StatItem({ stat, index }: { stat: typeof STATS[number]; index: number }
         index > 0 && "md:border-l-0"
       )}
     >
-      <div className="mb-2 text-lg">{stat.icon}</div>
+      <div className="mb-2 flex justify-center md:justify-start">
+        <Icon className="h-5 w-5 text-accent-light" />
+      </div>
       <p className="text-2xl font-bold tabular-nums text-accent-light md:text-3xl">
         {stat.prefix}
         {count}

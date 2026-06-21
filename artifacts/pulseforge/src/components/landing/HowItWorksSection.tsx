@@ -13,7 +13,6 @@ const STEPS = [
     description: "Start in the studio with your track title, genre, and mood.",
     Logo: MusixmatchLogo,
     accent: "text-orange-400",
-    glow: "group-hover:shadow-[0_0_30px_rgba(251,146,60,0.1)]",
   },
   {
     step: "02",
@@ -21,7 +20,6 @@ const STEPS = [
     description: "Draft lyrics, upload demos, and iterate versions in one workspace.",
     Logo: CyaniteLogo,
     accent: "text-cyan-400",
-    glow: "group-hover:shadow-[0_0_30px_rgba(103,232,249,0.1)]",
   },
   {
     step: "03",
@@ -29,7 +27,6 @@ const STEPS = [
     description: "Hit score, growth curve, hooks, energy, and streaming signals.",
     Logo: DashboardIcon,
     accent: "text-purple-400",
-    glow: "group-hover:shadow-[0_0_30px_rgba(167,139,250,0.1)]",
   },
   {
     step: "04",
@@ -37,7 +34,6 @@ const STEPS = [
     description: "What-If scenarios, marketing playbook, and exportable release pack.",
     Logo: PlaybookIcon,
     accent: "text-emerald-400",
-    glow: "group-hover:shadow-[0_0_30px_rgba(52,211,153,0.1)]",
   },
 ];
 
@@ -56,13 +52,13 @@ export function HowItWorksSection() {
     >
       <div className="relative">
         {/* Connecting line */}
-        <div className="absolute left-1/2 top-0 hidden h-full w-px -translate-x-1/2 bg-gradient-to-b from-accent/30 via-cyan-500/20 to-emerald-500/30 lg:block" />
+        <div className="absolute left-1/2 top-0 hidden h-full w-px -translate-x-1/2 bg-border lg:block" />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-stagger">
           {STEPS.map((item, i) => (
             <article
               key={item.step}
-              className={`group glass-card-hover relative flex h-full flex-col overflow-hidden rounded-2xl p-5 md:p-6 transition-all duration-300 ${item.glow}`}
+              className="group glass-card-hover relative flex h-full flex-col overflow-hidden rounded-2xl p-5 md:p-6 transition-all duration-300"
             >
               {/* Step number with gradient */}
               <div className="mb-4 flex items-center justify-between">
@@ -78,7 +74,7 @@ export function HowItWorksSection() {
 
               {/* Bottom accent line */}
               <div className="mt-auto pt-4">
-                <div className="h-0.5 w-8 rounded-full bg-gradient-to-r from-accent/60 to-transparent transition-all duration-300 group-hover:w-full" />
+                <div className="h-0.5 w-8 rounded-full bg-accent/60 transition-all duration-300 group-hover:w-full" />
               </div>
             </article>
           ))}

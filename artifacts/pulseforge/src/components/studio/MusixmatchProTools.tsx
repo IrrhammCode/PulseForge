@@ -1354,7 +1354,7 @@ export function MusixmatchProTools({
                     >
                       Copy analysis to creative brief
                     </button>
-                    {toolData.applied && <span className="ml-2 text-[10px] text-success">✓ Copied</span>}
+                    {toolData.applied && <span className="ml-2 text-[10px] text-success">Copied</span>}
                   </div>
                 ) : (
                   <div className="text-xs opacity-70">{toolData.note}</div>
@@ -1542,7 +1542,7 @@ export function MusixmatchProTools({
 
               {(mxmSyncSource || effectiveRichsync || effectiveAnalysis) && (
                 <div className="text-[10px] text-success mb-1.5">
-                  ✓ Sync: {mxmSyncSource === "whisper.forced-align"
+                  Sync: {mxmSyncSource === "whisper.forced-align"
                     ? "Groq Whisper (listens to your mix)"
                     : mxmSyncSource === "audio.vocal-phrases"
                       ? "Audio vocal detection (from mix waveform)"

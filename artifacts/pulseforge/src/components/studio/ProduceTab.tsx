@@ -927,7 +927,7 @@ export function ProduceTab() {
       setStudioTimelineEdits(finalEdits);
 
       closeSectionEditor();
-      alert(`✅ Section "${sectionId}" regenerated. Auto resized to match audio length + crossfades applied.`);
+      alert(`Section "${sectionId}" regenerated. Auto resized to match audio length + crossfades applied.`);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : 'Regeneration failed.');
     }
@@ -1055,7 +1055,7 @@ export function ProduceTab() {
         saveAudio(activeVersion.id, updatedAudio);
 
         void loadMix();
-        alert('✅ Full Bounce committed! The rendered arrangement (clips, fades, gains, automation, per-clip AI audio, mutes) is now the new mix stem.\nReady for stems, Viral Lab, or export.');
+        alert('Full Bounce committed! The rendered arrangement (clips, fades, gains, automation, per-clip AI audio, mutes) is now the new mix stem.\nReady for stems, Viral Lab, or export.');
       } else {
         alert('No audio to bounce. Make sure stems are loaded and play/export once.');
       }
@@ -1210,7 +1210,7 @@ export function ProduceTab() {
               className="btn-secondary text-sm"
               disabled={!sectionEdit.lyrics.trim() || isGeneratingPreview}
             >
-              {isGeneratingPreview ? 'Generating preview...' : '🔊 Generate & Preview Snippet'}
+              {isGeneratingPreview ? 'Generating preview...' : 'Generate & Preview Snippet'}
             </button>
 
             {previewBlob && (
@@ -1224,7 +1224,7 @@ export function ProduceTab() {
                   }}
                   className="btn-primary text-sm"
                 >
-                  ▶️ Play Preview
+                  Play Preview
                 </button>
                 <button
                   onClick={async () => {
@@ -1268,7 +1268,7 @@ export function ProduceTab() {
                   }}
                   className="btn-primary text-sm bg-emerald-600 hover:bg-emerald-500"
                 >
-                  ✅ Apply Trimmed to Timeline
+                  Apply Trimmed to Timeline
                 </button>
               </>
             )}
@@ -1309,7 +1309,7 @@ export function ProduceTab() {
               }}
               className="text-xs btn-secondary"
             >
-              ⚡ Auto automation from Cyanite energy
+              Auto automation from Cyanite energy
             </button>
           </div>
 

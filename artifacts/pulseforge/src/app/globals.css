@@ -1,27 +1,40 @@
 @import "tailwindcss";
 
 @theme {
-  /* === STUDIO DAYLIGHT — bright gallery-white system === */
-  --color-background: #f4f4f7;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #ffffff;
-  --color-border: #e7e7ee;
-  --color-border-subtle: #f0f0f4;
-  --color-foreground: #0a0a0f;
-  --color-muted: #5d5d6b;
-  --color-accent: #7c3aed;
-  --color-accent-light: #6d28d9;
-  --color-accent-muted: #7c3aed14;
-  --color-purple: #7c3aed;
-  --color-purple-light: #6d28d9;
-  --color-blue: #4f46e5;
-  --color-blue-light: #6366f1;
-  --color-cyan: #0891b2;
-  --color-emerald: #059669;
-  --color-success: #059669;
-  --color-warning: #b45309;
-  --color-danger: #dc2626;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* === THE VERGE — dark editorial hazard system === */
+  --color-background: #131313;        /* Canvas Black */
+  --color-surface: #131313;           /* cards = canvas + 1px border */
+  --color-surface-elevated: #2d2d2d;  /* Surface Slate */
+  --color-border: #313131;            /* Image Frame hairline */
+  --color-border-subtle: #232323;
+  --color-foreground: #ffffff;        /* Hazard White */
+  --color-muted: #949494;             /* Secondary Text / metadata */
+
+  --color-accent: #3cffd0;            /* Jelly Mint */
+  --color-accent-light: #3cffd0;
+  --color-accent-muted: #3cffd01f;
+
+  --color-purple: #5200ff;            /* Verge Ultraviolet */
+  --color-purple-light: #6a2bff;
+  --color-blue: #5200ff;
+  --color-blue-light: #3860be;        /* Deep Link Blue (hover) */
+  --color-cyan: #3cffd0;
+  --color-emerald: #3cffd0;
+  --color-success: #3cffd0;
+  --color-warning: #ffd23c;           /* hazard yellow tile */
+  --color-danger: #ff4d6d;            /* hazard pink */
+
+  --font-sans: "Inter", Helvetica, Arial, sans-serif;
+  --font-display: "Anton", Impact, Helvetica, sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+
+  /* Verge pill-everything radius scale */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 30px;
 }
 
 @layer base {
@@ -34,92 +47,116 @@
   }
 
   body {
-    @apply bg-background text-foreground min-h-screen font-medium;
-    letter-spacing: -0.011em;
+    @apply bg-background text-foreground min-h-screen;
+    font-family: var(--font-sans);
   }
 
-  /* Bold, confident editorial typography */
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-extrabold tracking-tight text-foreground;
-  }
-
+  /* Display headlines: Anka/Manuka substitute — loud, tight, athletic */
   h1 {
-    letter-spacing: -0.035em;
+    font-family: var(--font-display);
+    font-weight: 400; /* Anton is single-weight 900-equivalent */
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    @apply text-foreground;
+  }
+
+  /* Section + module headlines stay in the PolySans workhorse, heavy */
+  h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-foreground;
+    line-height: 1.05;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: #000000;
   }
 }
 
 @layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
   .glass {
-    @apply bg-surface/90 backdrop-blur-xl border border-border;
+    @apply bg-surface border border-border;
   }
 
   .card-interactive {
-    @apply transition-all duration-200 hover:border-accent/30 hover:shadow-[0_8px_30px_rgba(15,15,30,0.08)];
+    @apply transition-colors duration-150 hover:border-accent;
   }
 
   .text-accent {
     @apply text-accent-light;
   }
 
+  /* Fashion-whisper kicker → Verge mono-uppercase signature */
   .landing-eyebrow {
-    @apply text-xs font-bold uppercase tracking-[0.2em] text-accent-light;
+    @apply text-[0.7rem] font-semibold uppercase text-accent-light;
+    font-family: var(--font-mono);
+    letter-spacing: 0.18em;
   }
 
+  /* Mono uppercase label helper (kickers, tags, timestamps) */
+  .label-mono {
+    font-family: var(--font-mono);
+    @apply text-[0.7rem] font-medium uppercase text-muted;
+    letter-spacing: 0.14em;
+  }
+
+  /* Primary — Jelly Mint pill */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white transition-all duration-200 hover:bg-accent-light hover:shadow-[0_10px_28px_rgba(124,58,237,0.28)];
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-bold uppercase text-black transition-all duration-150 hover:bg-white;
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
   }
 
+  /* Secondary — dark slate pill */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 text-sm font-bold text-foreground transition-all duration-200 hover:border-accent/40 hover:bg-surface-elevated hover:shadow-[0_8px_24px_rgba(15,15,30,0.08)];
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-border bg-surface-elevated px-6 py-2.5 text-sm font-semibold uppercase text-foreground transition-all duration-150 hover:bg-white hover:text-black hover:border-white;
+    font-family: var(--font-mono);
+    letter-spacing: 0.1em;
+  }
+
+  /* Tertiary — outlined mint pill */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-accent bg-transparent px-5 py-2 text-xs font-bold uppercase text-accent transition-colors duration-150 hover:bg-accent hover:text-black;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
   }
 
   .bar-accent {
     @apply h-full rounded-full bg-accent;
   }
 
-  /* === PREMIUM VISUAL EFFECTS === */
+  /* === FLAT VERGE SURFACES (color/border as elevation, no shadow) === */
 
-  /* Gradient text */
+  /* "Gradient" text is solid color here — the Verge uses zero gradients */
   .gradient-text {
-    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 45%, #0891b2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-accent);
   }
 
   .gradient-text-warm {
-    background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #4f46e5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--color-purple-light);
   }
 
-  /* Glassmorphism cards */
+  /* Card surfaces — flat slate with hairline, color/border carries depth */
   .glass-card {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(124, 58, 237, 0.1);
-    box-shadow: 0 1px 2px rgba(15, 15, 30, 0.04);
+    background: #1a1a1a;
+    border: 1px solid var(--color-border);
   }
 
   .glass-card-hover {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(124, 58, 237, 0.1);
-    box-shadow: 0 1px 2px rgba(15, 15, 30, 0.04);
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #1a1a1a;
+    border: 1px solid var(--color-border);
+    transition: border-color 0.15s ease, background 0.15s ease;
   }
 
   .glass-card-hover:hover {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(124, 58, 237, 0.22);
-    box-shadow: 0 0 30px rgba(124, 58, 237, 0.06), 0 12px 32px rgba(15, 15, 30, 0.1);
-    transform: translateY(-2px);
+    border-color: var(--color-accent);
+    background: #1d1d1d;
   }
 
-  /* Glow effect on cards */
+  /* Hairline glow border → static mint hairline on hover, no glow */
   .glow-border {
     position: relative;
   }
@@ -127,107 +164,61 @@
   .glow-border::before {
     content: "";
     position: absolute;
-    inset: -1px;
+    inset: 0;
     border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(103, 232, 249, 0.1), rgba(139, 92, 246, 0.15));
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    opacity: 0;
-    transition: opacity 0.35s ease;
+    border: 1px solid transparent;
+    transition: border-color 0.15s ease;
     pointer-events: none;
   }
 
   .glow-border:hover::before {
-    opacity: 1;
+    border-color: var(--color-accent);
   }
 
-  /* Animated gradient border */
+  /* Animated gradient border → static mint hairline (no gradients) */
   .gradient-border-animated {
     position: relative;
-    overflow: hidden;
+    border: 1px solid var(--color-accent);
   }
 
-  .gradient-border-animated::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      var(--gradient-angle, 0deg),
-      #8b5cf6, #818cf8, #67e8f9, #34d399, #818cf8, #8b5cf6
-    );
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    animation: rotateBorder 4s linear infinite;
-    pointer-events: none;
-  }
-
-  /* Orb glow background */
-  .hero-glow {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.15;
-    pointer-events: none;
-    animation: orbFloat 8s ease-in-out infinite;
-  }
-
-  .hero-glow-purple {
-    background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
-  }
-
-  .hero-glow-blue {
-    background: radial-gradient(circle, #818cf8 0%, transparent 70%);
-  }
-
+  /* Decorative orbs/glows are disabled — the Verge is dead flat */
+  .hero-glow,
+  .hero-glow-purple,
+  .hero-glow-blue,
   .hero-glow-cyan {
-    background: radial-gradient(circle, #67e8f9 0%, transparent 70%);
+    display: none !important;
   }
 
-  /* Grid pattern overlay */
+  .noise-overlay::after {
+    content: none;
+  }
+
+  /* Subtle structural grid, near-invisible */
   .grid-pattern {
     background-image:
-      linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 64px 64px;
   }
 
-  /* Noise texture overlay */
-  .noise-overlay::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
-  /* Shimmer */
+  /* Skeleton shimmer in dark slate tones */
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(231, 231, 238, 0.6) 0%,
-      rgba(244, 244, 247, 0.9) 50%,
-      rgba(231, 231, 238, 0.6) 100%
+      #1a1a1a 0%,
+      #2d2d2d 50%,
+      #1a1a1a 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.8s ease-in-out infinite;
   }
 
   .range-slider {
-    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-border;
+    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-surface-elevated;
   }
 
   .range-slider::-webkit-slider-thumb {
-    @apply h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-background bg-accent shadow-md;
+    @apply h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-background bg-accent;
     transition: transform 0.15s ease;
   }
 
@@ -239,52 +230,51 @@
     @apply h-4 w-4 cursor-pointer rounded-full border-2 border-background bg-accent;
   }
 
-  /* === ANIMATIONS === */
+  /* === ANIMATIONS (kept, but no glow/gradient motion) === */
 
   .animate-fade-in {
-    animation: fadeIn 0.6s ease-out both;
+    animation: fadeIn 0.5s ease-out both;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.6s ease-out both;
-  }
-
-  .animate-slide-up-delayed {
-    animation: slideUp 0.6s ease-out 0.15s both;
-  }
-
-  .animate-slide-up-delayed-2 {
-    animation: slideUp 0.6s ease-out 0.3s both;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
-  }
-
-  .animate-float {
-    animation: gentleFloat 6s ease-in-out infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulseGlow 3s ease-in-out infinite;
-  }
-
-  .animate-gradient-x {
-    background-size: 200% 200%;
-    animation: gradientX 6s ease infinite;
-  }
-
-  .animate-stagger > * {
     animation: slideUp 0.5s ease-out both;
   }
 
+  .animate-slide-up-delayed {
+    animation: slideUp 0.5s ease-out 0.12s both;
+  }
+
+  .animate-slide-up-delayed-2 {
+    animation: slideUp 0.5s ease-out 0.24s both;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .animate-float {
+    animation: none;
+  }
+
+  .animate-pulse-glow {
+    animation: none;
+  }
+
+  .animate-gradient-x {
+    animation: none;
+  }
+
+  .animate-stagger > * {
+    animation: slideUp 0.45s ease-out both;
+  }
+
   .animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
-  .animate-stagger > *:nth-child(2) { animation-delay: 80ms; }
-  .animate-stagger > *:nth-child(3) { animation-delay: 160ms; }
-  .animate-stagger > *:nth-child(4) { animation-delay: 240ms; }
-  .animate-stagger > *:nth-child(5) { animation-delay: 320ms; }
-  .animate-stagger > *:nth-child(6) { animation-delay: 400ms; }
-  .animate-stagger > *:nth-child(7) { animation-delay: 480ms; }
+  .animate-stagger > *:nth-child(2) { animation-delay: 70ms; }
+  .animate-stagger > *:nth-child(3) { animation-delay: 140ms; }
+  .animate-stagger > *:nth-child(4) { animation-delay: 210ms; }
+  .animate-stagger > *:nth-child(5) { animation-delay: 280ms; }
+  .animate-stagger > *:nth-child(6) { animation-delay: 350ms; }
+  .animate-stagger > *:nth-child(7) { animation-delay: 420ms; }
 }
 
 /* === KEYFRAMES === */
@@ -297,7 +287,7 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -308,7 +298,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -321,45 +311,8 @@
   100% { background-position: -200% 0; }
 }
 
-@keyframes gentleFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
-}
-
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.25; }
-}
-
-@keyframes gradientX {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes rotateBorder {
-  from { --gradient-angle: 0deg; }
-  to { --gradient-angle: 360deg; }
-}
-
 @keyframes barGrow {
   from { width: 0; }
-}
-
-@keyframes countPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
 }
 
 /* === PRINT === */
