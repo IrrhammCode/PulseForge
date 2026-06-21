@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowRight, Flame, Music2, Trash2 } from "lucide-react";
+import { ArrowRight, Flame, Music2, Rocket, Trash2 } from "lucide-react";
 import { getViralLabLink } from "@/lib/navigation";
 import { hasLyricsContent } from "@/lib/studio/lyrics";
 import type { StudioProject } from "@/types/studio";
@@ -44,32 +44,42 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
       <p className="mt-3 text-[11px] text-muted">Updated {updated}</p>
 
-      <div className="mt-4 flex items-center gap-2 border-t-2 border-foreground pt-4">
-        <Link
-          href={`/studio/${project.id}/write`}
-          className="btn-primary flex-1 !py-2 text-xs"
-        >
-          Open
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-        {canViral && (
+      <div className="mt-4 flex flex-col gap-2 border-t-2 border-foreground pt-4">
+        <div className="flex items-center gap-2">
           <Link
-            href={getViralLabLink(project.id)}
-            className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
-            aria-label={`Viral Lab for ${project.title}`}
-            title="Viral Lab"
+            href={`/studio/${project.id}/write`}
+            className="btn-primary flex-1 !py-2 text-xs"
           >
-            <Flame className="h-4 w-4" />
+            Open
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        )}
-        <button
-          type="button"
-          onClick={() => onDelete(project.id)}
-          className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
-          aria-label={`Delete ${project.title}`}
+          {canViral && (
+            <Link
+              href={getViralLabLink(project.id)}
+              className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
+              aria-label={`Viral Lab for ${project.title}`}
+              title="Viral Lab"
+            >
+              <Flame className="h-4 w-4" />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => onDelete(project.id)}
+            className="border-2 border-foreground p-2 text-foreground transition hover:bg-foreground hover:text-background"
+            aria-label={`Delete ${project.title}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+        <Link
+          href={`/studio/${project.id}/launch`}
+          className="btn-secondary w-full justify-center !py-2 text-xs"
+          title="Optimize & Ship"
         >
-          <Trash2 className="h-4 w-4" />
-        </button>
+          <Rocket className="h-3.5 w-3.5" />
+          Optimize &amp; Ship
+        </Link>
       </div>
     </article>
   );

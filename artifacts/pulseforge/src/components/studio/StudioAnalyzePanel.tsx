@@ -129,6 +129,35 @@ export function StudioAnalyzePanel({
     }
   }, [analysis, activeVersion, project, onUpdateProject, onSaveLyrics, onAnalysisSaved, saveFullSong, onUpdateStems]);
 
+  const handleAutoFixAndGenerateAndOpen = useCallback(async () => {
+    if (!activeVersion || !analysis) return;
+
+    const patches = buildAutoFixPatches(analysis.meta?.mxmCoach, project, analysis);
+
+    if (onUpdateProject) onUpdateProject(patches);
+    if (onSaveLyrics && activeVersion.lyrics) {
+      const p = { ...project, ...patches };
+      onSaveLyrics(applyConceptToLyrics(p as any, activeVersion.lyrics));
+    }
+    if (onAnalysisSaved) onAnalysisSaved({ ...analysis, meta: { ...analysis.meta, mxmCoach: analysis.meta?.mxmCoach || {} } });
+
+    try {
+      const lyricsForGen = activeVersion.lyrics;
+      const fullLyrics = composeLyricsBody(lyricsForGen);
+      const coach = analysis.meta?.mxmCoach || {};
+      const compPlan = buildCompositionPlan(lyricsForGen, { ...project, ...patches }, coach);
+      const prompt = buildFullSongPrompt({ ...project, ...patches }, fullLyrics, coach);
+
+      const blob = await generateFullSong(prompt, { modelId: "music_v2", compositionPlan: compPlan });
+
+      if (saveFullSongAndOpenProduce) await saveFullSongAndOpenProduce(blob);
+      else if (saveFullSong) await saveFullSong(blob);
+      if (onUpdateStems) onUpdateStems({ stemSource: "musixmatch" });
+    } catch (e: any) {
+      alert("Fix done, generate failed: " + (e.message || e));
+    }
+  }, [analysis, activeVersion, project, onUpdateProject, onSaveLyrics, onAnalysisSaved, saveFullSongAndOpenProduce, saveFullSong, onUpdateStems]);
+
   return (
     <div className="space-y-6">
       <StudioStaleViralBanner projectId={project.id} />
