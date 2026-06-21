@@ -607,15 +607,25 @@ function ViralLabPageInner() {
     return runAnalysisForProject(selectedId, whatIf);
   }, [selectedId, whatIf, runAnalysisForProject]);
 
+  // Tracks which selection has already been hydrated so this effect runs once
+  // per selected track instead of on every render (loadDemo's deps include the
+  // searchParams object, which is recreated each render).
+  const loadedSelectionRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!selectedId || !ready) return;
+    if (loadedSelectionRef.current === selectedId) return;
+    loadedSelectionRef.current = selectedId;
 
     if (selectedId === "demo-blinding-lights" || selectedId === "from-quick-analyze") {
+      // Explicit deep-link handoff (?demo / from Quick Analyze) — seed instantly.
       loadDemo();
       return;
     }
 
-    loadFromProject(selectedId, true);
+    // Load any saved simulation for this project, but do NOT auto-run a fresh
+    // 1M simulation. The user picks a track first, then presses Run.
+    loadFromProject(selectedId, false);
   }, [selectedId, ready, loadFromProject, loadDemo]);
 
   useEffect(() => {
@@ -644,13 +654,11 @@ function ViralLabPageInner() {
     [selectedId, runAnalysisForProject]
   );
 
-  const handleProjectSelect = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      loadFromProject(id, false);
-    },
-    [loadFromProject]
-  );
+  const handleProjectSelect = useCallback((id: string) => {
+    // Just switch selection — the hydration effect loads any saved simulation
+    // for the new track (without auto-running a fresh one).
+    setSelectedId(id);
+  }, []);
 
   return (
     <LandingContainer className="py-10 md:py-14">
