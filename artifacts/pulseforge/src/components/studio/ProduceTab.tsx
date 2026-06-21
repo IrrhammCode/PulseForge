@@ -752,15 +752,30 @@ export function ProduceTab() {
     }
   };
 
-  const updatePlanChunk = (idx: number, field: 'text' | 'positive_styles', value: any) => {
+  const updatePlanChunk = (
+    idx: number,
+    field: 'text' | 'positive_styles' | 'duration_sec',
+    value: any
+  ) => {
     if (!editingPlan) return;
-    const newPlan = { ...editingPlan, chunks: [...editingPlan.chunks] };
-    if (field === 'text') {
-      newPlan.chunks[idx].text = value;
-    } else {
-      newPlan.chunks[idx].positive_styles = value.split(',').map((s: string) => s.trim()).filter(Boolean);
-    }
-    setEditingPlan(newPlan);
+    // Clone only the edited chunk (avoid mutating the existing state object).
+    const chunks = editingPlan.chunks.map((c: any, i: number) => {
+      if (i !== idx) return c;
+      const updated = { ...c };
+      if (field === 'text') {
+        updated.text = value;
+      } else if (field === 'duration_sec') {
+        const secs = Math.max(3, Math.min(120, Math.round(Number(value) || 0)));
+        updated.duration_ms = secs * 1000;
+      } else {
+        updated.positive_styles = value
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+      }
+      return updated;
+    });
+    setEditingPlan({ ...editingPlan, chunks });
   };
 
   const handleGenerateAiVocalForSection = useCallback(async (sectionId: TimelineSectionId) => {
@@ -1413,7 +1428,21 @@ export function ProduceTab() {
             <div className="space-y-3 text-xs">
               {editingPlan.chunks.map((chunk: any, idx: number) => (
                 <div key={idx} className="border border-border/60 rounded p-2 bg-surface">
-                  <div className="font-mono text-[10px] mb-1">Chunk {idx + 1}</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-mono text-[10px]">Chunk {idx + 1}</div>
+                    <label className="flex items-center gap-1 text-[10px] text-muted">
+                      Duration
+                      <input
+                        type="number"
+                        min={3}
+                        max={120}
+                        className="w-14 text-xs bg-surface border border-border rounded px-1 py-0.5"
+                        value={Math.round((chunk.duration_ms ?? 20000) / 1000)}
+                        onChange={(e) => updatePlanChunk(idx, 'duration_sec', e.target.value)}
+                      />
+                      s
+                    </label>
+                  </div>
                   <textarea
                     className="w-full h-16 text-xs font-mono bg-surface border border-border rounded p-1"
                     value={chunk.text || ''}

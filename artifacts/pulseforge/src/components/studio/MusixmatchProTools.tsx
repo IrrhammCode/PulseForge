@@ -62,6 +62,28 @@ function normalizeForMatch(s: string): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
 }
 
+/**
+ * Whether two lyric bodies are the *same* song (so a catalog translation can be
+ * trusted for these lyrics). Compares non-empty, non-section lines by content +
+ * count rather than just the first characters.
+ */
+function lyricsBodiesMatch(a: string, b: string): boolean {
+  const lines = (s: string) =>
+    (s || "")
+      .split("\n")
+      .map((l) => l.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim())
+      .filter((l) => l && !/^\[.*\]$/.test(l));
+  const la = lines(a);
+  const lb = lines(b);
+  if (la.length === 0 || lb.length === 0) return false;
+  // Line counts must be in the same ballpark.
+  if (Math.abs(la.length - lb.length) > Math.max(2, Math.ceil(lb.length * 0.2))) return false;
+  const setA = new Set(la);
+  let matched = 0;
+  for (const line of lb) if (setA.has(line)) matched++;
+  return matched / lb.length >= 0.7;
+}
+
 export function MusixmatchProTools({
   project,
   versionId,
@@ -107,6 +129,10 @@ export function MusixmatchProTools({
   const videoAnimRef = useRef<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  // Monotonic token: every stop/start bumps it. An in-flight async
+  // startVideoPreview compares its captured token against this and aborts if a
+  // newer start/stop superseded it — prevents two Audio instances playing at once.
+  const playbackGenRef = useRef(0);
   const vocalActivityRef = useRef<VocalActivityProfile | null>(null);
   const syncCacheRef = useRef<{
     lines: TimedLyricLine[];
@@ -117,6 +143,8 @@ export function MusixmatchProTools({
 
   // Shared stop to prevent multiple audio instances playing at once
   const stopCurrentPreview = useCallback(() => {
+    // Invalidate any in-flight startVideoPreview so it aborts at its next checkpoint.
+    playbackGenRef.current += 1;
     if (videoAnimRef.current) {
       cancelAnimationFrame(videoAnimRef.current);
       videoAnimRef.current = null;
@@ -399,41 +427,60 @@ export function MusixmatchProTools({
     setToolError(null);
 
     try {
-      const refId = enrichedRef?.track?.id ? Number(enrichedRef.track.id) : (initialMxmId ? Number(initialMxmId) : null);
-      const commontrackId = enrichedRef?.track?.commontrackId
-        ? Number(enrichedRef.track.commontrackId)
-        : undefined;
-
-      if (refId && transLang !== "en") {
-        const res = await fetchLyricsTranslation(refId, transLang, commontrackId).catch(() => null);
-        const translatedBody =
-          res?.translatedBody ??
-          res?.translation?.lyrics_translated?.lyrics_body;
-
-        if (translatedBody && normalizeForMatch(translatedBody) !== normalizeForMatch(data.original)) {
+      // PRIMARY: translate the user's ACTUAL project lyrics line-by-line via Groq.
+      // This is the correct source for original songs — a Musixmatch catalog
+      // translation comes from whatever reference track was matched/enriched,
+      // which is usually a *different* recording, so its lines won't match.
+      try {
+        const groqRes = await translateProjectLyrics({
+          text: data.original,
+          targetLang: transLang,
+          sourceLang: "en",
+        });
+        if (groqRes?.translated?.trim()) {
           setToolData({
             ...data,
-            translated: translatedBody,
+            translated: groqRes.translated,
             translatedLang: transLang,
-            source: "musixmatch",
+            source: groqRes.source,
           });
           return;
         }
+      } catch (groqErr) {
+        // Groq unavailable (e.g. no GROQ_API_KEY) — fall through to MXM catalog
+        // translation, but only when it genuinely matches the project lyrics.
+        const refId = enrichedRef?.track?.id ? Number(enrichedRef.track.id) : (initialMxmId ? Number(initialMxmId) : null);
+        const commontrackId = enrichedRef?.track?.commontrackId
+          ? Number(enrichedRef.track.commontrackId)
+          : undefined;
+
+        if (refId && transLang !== "en") {
+          const res = await fetchLyricsTranslation(refId, transLang, commontrackId).catch(() => null);
+          const translatedBody =
+            res?.translatedBody ??
+            res?.translation?.lyrics_translated?.lyrics_body;
+          const catalogOriginal =
+            (res as any)?.originalBody ??
+            (res as any)?.translation?.lyrics_original?.lyrics_body ??
+            "";
+
+          // Use the catalog translation only when its source lyrics line-count
+          // and content closely match the project lyrics (not just first chars).
+          if (translatedBody && lyricsBodiesMatch(catalogOriginal, data.original)) {
+            setToolData({
+              ...data,
+              translated: translatedBody,
+              translatedLang: transLang,
+              source: "musixmatch",
+            });
+            return;
+          }
+        }
+
+        throw groqErr;
       }
 
-      // Groq fallback for original projects (or when MXM has no translation)
-      const groqRes = await translateProjectLyrics({
-        text: data.original,
-        targetLang: transLang,
-        sourceLang: "en",
-      });
-
-      setToolData({
-        ...data,
-        translated: groqRes.translated,
-        translatedLang: transLang,
-        source: groqRes.source,
-      });
+      throw new Error("Could not fetch translation. Set GROQ_API_KEY for AI translation.");
     } catch (e: any) {
       setToolError(e?.message || "Could not fetch translation. Set GROQ_API_KEY for AI translation.");
     } finally {
@@ -647,8 +694,19 @@ export function MusixmatchProTools({
 
 
   const startVideoPreview = async (providedAudio?: HTMLAudioElement) => {
-    // Always stop previous instance first (prevents double/triple playback)
+    // Always stop previous instance first (prevents double/triple playback).
+    // stopCurrentPreview() bumps the generation token; capture our own copy so
+    // we can detect (and abort) if another start/stop supersedes us mid-await.
     stopCurrentPreview();
+    const myGen = playbackGenRef.current;
+    const superseded = () => playbackGenRef.current !== myGen;
+    // Tear down this invocation's own audio when it loses the race.
+    const abortLocal = () => {
+      if (!providedAudio) {
+        try { audio.pause(); } catch {}
+        try { audio.src = ""; } catch {}
+      }
+    };
 
     setPreviewStarted(true);
     setVideoPreviewReady(true);
@@ -672,6 +730,7 @@ export function MusixmatchProTools({
         audio.src = URL.createObjectURL(mixBlob);
       }
     }
+    if (superseded()) { abortLocal(); return; }
     audioElRef.current = audio;
 
     // Load metadata BEFORE play so timing grid matches real duration
@@ -690,6 +749,7 @@ export function MusixmatchProTools({
         setTimeout(resolve, 900);
       });
     }
+    if (superseded()) { abortLocal(); return; }
 
     let targetTotal = 120;
     if (audio.duration && isFinite(audio.duration) && audio.duration > 10) {
@@ -744,6 +804,10 @@ export function MusixmatchProTools({
     // Use vocal profile from the pipeline (already detected in resolveVideoSyncPipeline)
     const vocalProfile: VocalActivityProfile | null = vocalActivityRef.current;
 
+    // A newer start/stop may have run during the (async) sync pipeline — abort
+    // before we ever call play() so only the latest invocation produces sound.
+    if (superseded()) { abortLocal(); return; }
+
     // Start audio + canvas on the same beat (avoids lyrics ahead of buffered audio)
     audio.currentTime = 0;
     await new Promise<void>((resolve) => {
@@ -752,6 +816,8 @@ export function MusixmatchProTools({
       void audio.play().catch(done);
       setTimeout(done, 280);
     });
+    // Final guard: if superseded while play() was resolving, stop immediately.
+    if (superseded()) { abortLocal(); return; }
 
     // Use actual audio duration when available for accurate progress bar
     let total = (project as any).durationSec || 120;
@@ -764,6 +830,9 @@ export function MusixmatchProTools({
 
     const draw = () => {
       if (!ctx) return;
+      // Self-terminate if a newer start/stop superseded this loop (avoids a
+      // ghost RAF loop rescheduling itself after stopCurrentPreview()).
+      if (superseded()) return;
       const t = audio.currentTime;
       const prog = Math.min(t / total, 1);
 

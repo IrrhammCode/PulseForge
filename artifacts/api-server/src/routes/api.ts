@@ -29,6 +29,7 @@ import { getLiveTrendFeed } from "@pulseforge/shared/lib/trends/feed";
 import { evaluateSeasonalContext } from "@pulseforge/shared/lib/trends/seasonal-calendar";
 import { buildReleaseHistory } from "@pulseforge/shared/lib/scoring/release-history";
 import { composeLyricsBody } from "@pulseforge/shared/lib/studio/lyrics";
+import { translateLyricsBody } from "@pulseforge/shared/lib/musixmatch/translate-lyrics";
 import { hasElevenLabsKey, synthesizeSpeech, listVoices, cloneVoice, composeMusic, separateMusicStems } from "@pulseforge/shared/lib/elevenlabs/client";
 import { hasLalalKey, separateWithLalal } from "@pulseforge/shared/lib/lalal/client";
 import { searchConcerts } from "@pulseforge/shared/lib/jambase/client";
@@ -405,6 +406,40 @@ apiRouter.post("/studio/lyrics/coach-fix", async (req, res) => {
   } catch (err) {
     res.status(500).json({
       error: err instanceof Error ? err.message : "Coach fix failed",
+    });
+  }
+});
+
+apiRouter.post("/studio/translate-lyrics", async (req, res) => {
+  try {
+    const body = req.body as {
+      text?: string;
+      targetLang?: string;
+      sourceLang?: string;
+    };
+    const text = typeof body.text === "string" ? body.text : "";
+    const targetLang = typeof body.targetLang === "string" ? body.targetLang.trim() : "";
+    if (!text.trim()) {
+      res.status(400).json({ error: "Lyrics text is required for translation" });
+      return;
+    }
+    if (!targetLang) {
+      res.status(400).json({ error: "A target language is required" });
+      return;
+    }
+
+    const result = await translateLyricsBody(text, targetLang, body.sourceLang || "auto");
+    if (!result) {
+      res.status(503).json({
+        error:
+          "AI translation isn't available. Add a GROQ_API_KEY to enable line-by-line lyric translation, then try again.",
+      });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Translation failed",
     });
   }
 });
