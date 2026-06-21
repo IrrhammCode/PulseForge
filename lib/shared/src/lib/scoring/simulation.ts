@@ -44,7 +44,11 @@ export function runMonteCarloSimulation(
     for (let week = 0; week < 16; week++) {
       const weeklyGrowth =
         Math.round(
-          (8000 + rng() * 45000) *
+          // Calibrated so a strong track (hitScore ~85+) realistically
+          // accumulates ~1M plays across the 16-week window. The previous
+          // base (8k–53k/week) peaked near ~130k cumulative even for a
+          // perfect song, pinning probabilityToReach at its 5% floor.
+          (100000 + rng() * 540000) *
           baseReach *
           viralFactor *
           Math.exp(-week * decay) *

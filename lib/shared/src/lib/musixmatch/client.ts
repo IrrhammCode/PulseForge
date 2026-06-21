@@ -123,27 +123,77 @@ async function mxmPost<T>(
   return data;
 }
 
+function normalizeSearchText(s: string): string {
+  return (s ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Relevance of a track to the raw query. Musixmatch sorts by popularity
+ * (s_track_rating), which surfaces unrelated high-rated songs for non-exact
+ * queries — so we re-rank by how well the title/artist actually match.
+ */
+function trackRelevanceScore(query: string, track: MxmTrackRaw): number {
+  const q = normalizeSearchText(query);
+  if (!q) return 0;
+  const title = normalizeSearchText(track.track_name);
+  const artist = normalizeSearchText(track.artist_name);
+  const combined = `${title} ${artist}`.trim();
+
+  let score = 0;
+  if (title === q) score += 100;
+  else if (title.startsWith(q)) score += 75;
+  else if (title.includes(q)) score += 55;
+
+  if (combined === q) score += 45;
+  else if (combined.includes(q)) score += 20;
+
+  const qWords = q.split(" ").filter(Boolean);
+  const trackWords = new Set(combined.split(" ").filter(Boolean));
+  const overlap = qWords.filter((w) => trackWords.has(w)).length;
+  score += (overlap / Math.max(1, qWords.length)) * 35;
+
+  // Popularity only as a tiebreaker between similarly-relevant matches.
+  score += (track.track_rating ?? 0) * 0.05;
+  return score;
+}
+
 export async function searchTracks(query: string, pageSize = 10): Promise<MxmTrackRaw[]> {
+  // Over-fetch candidates so re-ranking has room to surface the real match.
+  const fetchSize = Math.min(Math.max(pageSize * 2, 20), 40);
   const params: Record<string, string> = {
-    page_size: String(pageSize),
+    page_size: String(fetchSize),
     f_has_lyrics: "1",
     s_track_rating: "desc",
   };
 
-  // Improve matching for "title - artist" queries, as recommended in Musixmatch docs
-  const dashMatch = query.match(/^(.+?)\s*-\s*(.+)$/);
+  // Improve matching for "title - artist" queries, as recommended in Musixmatch docs.
+  // For plain queries use q_track (title-targeted): the generic full-text `q`
+  // param combined with rating-sort surfaces globally popular but unrelated
+  // tracks (e.g. searching "Blinding Lights" never returned The Weeknd).
+  const dashMatch = query.match(/^(.+?)\s+-\s+(.+)$/);
   if (dashMatch) {
     params.q_track = dashMatch[1].trim();
     params.q_artist = dashMatch[2].trim();
   } else {
-    params.q = query;
+    params.q_track = query;
   }
 
   const data = await mxmFetch<MxmSearchResponse>("track.search", params);
 
   const body = data.message?.body;
   if (!body || Array.isArray(body) || typeof body !== 'object' || !('track_list' in body)) return [];
-  return (body as any).track_list.map((item: any) => item.track);
+  const tracks: MxmTrackRaw[] = (body as any).track_list.map((item: any) => item.track);
+
+  return tracks
+    .map((track) => ({ track, score: trackRelevanceScore(query, track) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, pageSize)
+    .map((entry) => entry.track);
 }
 
 export async function getTrackLyrics(
