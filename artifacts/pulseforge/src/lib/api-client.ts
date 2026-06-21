@@ -367,6 +367,23 @@ export async function triggerN8nWorkflow(payload: Record<string, unknown>): Prom
   return data;
 }
 
+/**
+ * Strip heavy per-version audio (waveform arrays + stems) from the other
+ * projects we send for same-artist release history. The backend only reads
+ * each project's title/artist + version scores there — never the audio — so
+ * shipping every project's full waveform balloons the POST body to several MB
+ * and stalls the request through the proxy.
+ */
+function slimProjectForHistory(p: StudioProject): StudioProject {
+  return {
+    ...p,
+    versions: p.versions.map((v) => {
+      const { audio: _audio, ...rest } = v;
+      return rest as typeof v;
+    }),
+  };
+}
+
 export async function runViralLabAnalysis(
   project: StudioProject,
   options?: {
@@ -375,16 +392,31 @@ export async function runViralLabAnalysis(
     allProjects?: StudioProject[];
   }
 ): Promise<ViralAnalysis> {
-  const res = await fetch("/api/viral/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      project,
-      versionId: options?.versionId,
-      whatIf: options?.whatIf,
-      allProjects: options?.allProjects,
-    }),
-  });
+  // Never let the simulation spin forever — abort and surface an error instead.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  let res: Response;
+  try {
+    res = await fetch("/api/viral/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        project,
+        versionId: options?.versionId,
+        whatIf: options?.whatIf,
+        allProjects: options?.allProjects?.map(slimProjectForHistory),
+      }),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("Simulation timed out — please try again.", 504);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const data = await res.json();
   if (!res.ok) {

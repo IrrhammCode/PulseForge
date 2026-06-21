@@ -1,2 +1,3 @@
 - [Studio local-first persistence](studio-local-persistence.md) — `command*` writes localStorage but fires no same-tab `storage` event; pass an `onChanged`/refresh callback to update sibling components.
 - [Optimize & Ship +0/+0](optimize-ship-pipeline.md) — baseline must be a fresh analysis, never the cached one, or before==after.
+- [Viral proxy payload bloat](viral-proxy-payload-bloat.md) — large frontend POSTs (allProjects w/ audio) stall through the proxy though backend is fast; slim payloads + abort-timeout.
