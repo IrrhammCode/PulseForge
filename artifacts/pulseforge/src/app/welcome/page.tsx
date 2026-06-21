@@ -19,8 +19,8 @@ export default function WelcomePage() {
       </LandingContainer>
 
       {/* Stats divider */}
-      <div className="relative border-y border-border/50 bg-surface/40 backdrop-blur-sm">
-        <LandingContainer className="py-8 md:py-10">
+      <div className="relative border-y-2 border-foreground bg-surface-elevated">
+        <LandingContainer className="py-10 md:py-12">
           <StatsBar />
         </LandingContainer>
       </div>

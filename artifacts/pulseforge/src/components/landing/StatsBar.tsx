@@ -26,23 +26,22 @@ function StatItem({ stat, index }: { stat: typeof STATS[number]; index: number }
   return (
     <div
       className={cn(
-        "group relative rounded-xl p-4 text-center transition-all duration-300 md:text-left",
-        "glass-card-hover",
-        index > 0 && "md:border-l-0"
+        "group relative px-2 py-2 text-left md:px-6",
+        index > 0 && "md:border-l-2 md:border-foreground"
       )}
     >
-      <div className="mb-2 flex justify-center md:justify-start">
-        <Icon className="h-5 w-5 text-accent-light" />
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-foreground" />
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground">
+          {stat.label}
+        </p>
       </div>
-      <p className="text-2xl font-bold tabular-nums text-accent-light md:text-3xl">
+      <p className="font-display text-4xl tabular-nums leading-none text-foreground md:text-5xl">
         {stat.prefix}
         {count}
-        <span className="text-lg text-accent-light/70">{stat.suffix}</span>
+        <span className="text-2xl text-foreground/70">{stat.suffix}</span>
       </p>
-      <p className="mt-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
-        {stat.label}
-      </p>
-      <p className="mt-1 hidden text-[11px] leading-snug text-muted sm:block">
+      <p className="mt-2 hidden text-[11px] leading-snug text-muted sm:block">
         {stat.detail}
       </p>
     </div>

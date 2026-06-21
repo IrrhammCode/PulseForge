@@ -23,7 +23,7 @@ const FEATURES = [
   },
   {
     Logo: ({ size }: { size?: number }) => (
-      <Flame className="text-orange-400" style={{ width: size, height: size }} />
+      <Flame className="text-foreground" style={{ width: size, height: size }} />
     ),
     title: "Viral Lab",
     description:
@@ -100,19 +100,14 @@ export function FeaturesSection() {
             key={feature.title}
             className="group glass-card-hover glow-border relative flex h-full flex-col overflow-hidden rounded-2xl p-5"
           >
-            {/* Subtle gradient bg on hover */}
-            <div
-              className="absolute inset-0 bg-accent/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-            />
-
             <div className="relative z-10">
               <div className="mb-4 flex items-center gap-3">
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${feature.iconBg} transition-transform duration-300 group-hover:scale-110`}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-foreground bg-surface-elevated transition-transform duration-300 group-hover:scale-110"
                 >
                   <feature.Logo size={22} />
                 </div>
-                <span className="rounded-full border border-border/60 bg-surface/50 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted backdrop-blur-sm">
+                <span className="rounded-full border border-foreground px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground">
                   {feature.badge}
                 </span>
               </div>

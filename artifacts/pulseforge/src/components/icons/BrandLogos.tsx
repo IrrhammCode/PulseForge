@@ -93,15 +93,8 @@ export function HitScoreIcon({ className, size = 28 }: LogoProps) {
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <rect width="28" height="28" rx="7" fill="#1E1033" />
-      <circle cx="14" cy="14" r="7" stroke="url(#hs-grad)" strokeWidth="2.5" />
-      <path d="M14 10v4l3 2" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" />
-      <defs>
-        <linearGradient id="hs-grad" x1="7" y1="7" x2="21" y2="21">
-          <stop stopColor="#C084FC" />
-          <stop stopColor="#FBBF24" />
-        </linearGradient>
-      </defs>
+      <circle cx="14" cy="14" r="7" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M14 10v4l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -116,20 +109,13 @@ export function SimulationIcon({ className, size = 28 }: LogoProps) {
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <rect width="28" height="28" rx="7" fill="#101828" />
       <path
         d="M6 20L10 14l4 4 3-6 5 8"
-        stroke="url(#sim-grad)"
+        stroke="currentColor"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <defs>
-        <linearGradient id="sim-grad" x1="6" y1="20" x2="22" y2="10">
-          <stop stopColor="#818CF8" />
-          <stop stopColor="#2DD4BF" />
-        </linearGradient>
-      </defs>
     </svg>
   );
 }
@@ -144,9 +130,8 @@ export function PlaybookIcon({ className, size = 28 }: LogoProps) {
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <rect width="28" height="28" rx="7" fill="#1A1420" />
-      <rect x="8" y="7" width="12" height="14" rx="2" stroke="#C084FC" strokeWidth="1.8" />
-      <path d="M11 11h6M11 14h6M11 17h4" stroke="#FBBF24" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="8" y="7" width="12" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M11 11h6M11 14h6M11 17h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -161,10 +146,9 @@ export function DashboardIcon({ className, size = 28 }: LogoProps) {
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <rect width="28" height="28" rx="7" fill="#12121C" />
-      <rect x="7" y="7" width="5" height="5" rx="1" fill="#9333EA" />
-      <rect x="14" y="7" width="7" height="5" rx="1" fill="#6366F1" opacity="0.85" />
-      <rect x="7" y="14" width="14" height="7" rx="1" fill="#2DD4BF" opacity="0.75" />
+      <rect x="7" y="7" width="5" height="5" rx="1" fill="currentColor" />
+      <rect x="14" y="7" width="7" height="5" rx="1" fill="currentColor" opacity="0.7" />
+      <rect x="7" y="14" width="14" height="7" rx="1" fill="currentColor" opacity="0.45" />
     </svg>
   );
 }

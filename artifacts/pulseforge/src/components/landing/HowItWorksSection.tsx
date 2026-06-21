@@ -12,28 +12,28 @@ const STEPS = [
     title: "Create a project",
     description: "Start in the studio with your track title, genre, and mood.",
     Logo: MusixmatchLogo,
-    accent: "text-orange-400",
+    accent: "text-foreground",
   },
   {
     step: "02",
     title: "Write & produce",
     description: "Draft lyrics, upload demos, and iterate versions in one workspace.",
     Logo: CyaniteLogo,
-    accent: "text-cyan-400",
+    accent: "text-foreground",
   },
   {
     step: "03",
     title: "Analyze potential",
     description: "Hit score, growth curve, hooks, energy, and streaming signals.",
     Logo: DashboardIcon,
-    accent: "text-purple-400",
+    accent: "text-foreground",
   },
   {
     step: "04",
     title: "Launch smarter",
     description: "What-If scenarios, marketing playbook, and exportable release pack.",
     Logo: PlaybookIcon,
-    accent: "text-emerald-400",
+    accent: "text-foreground",
   },
 ];
 
@@ -62,10 +62,10 @@ export function HowItWorksSection() {
             >
               {/* Step number with gradient */}
               <div className="mb-4 flex items-center justify-between">
-                <span className={`text-2xl font-black tabular-nums ${item.accent} opacity-40`}>
+                <span className={`font-display text-4xl tabular-nums ${item.accent}`}>
                   {item.step}
                 </span>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-surface/50 transition-transform duration-300 group-hover:scale-110 group-hover:border-accent/30">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-foreground bg-surface-elevated transition-transform duration-300 group-hover:scale-110">
                   <item.Logo size={20} />
                 </div>
               </div>
@@ -74,7 +74,7 @@ export function HowItWorksSection() {
 
               {/* Bottom accent line */}
               <div className="mt-auto pt-4">
-                <div className="h-0.5 w-8 rounded-full bg-accent/60 transition-all duration-300 group-hover:w-full" />
+                <div className="h-0.5 w-8 rounded-full bg-foreground transition-all duration-300 group-hover:w-full" />
               </div>
             </article>
           ))}

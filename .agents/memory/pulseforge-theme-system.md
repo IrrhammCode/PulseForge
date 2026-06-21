@@ -1,40 +1,40 @@
 ---
 name: PulseForge theme system
-description: How to retheme the whole PulseForge web app (where the visual system lives)
+description: How the PulseForge web app is rethemed (where the visual system lives) and the rules that keep a retheme cohesive
 ---
 
 # PulseForge theming
 
 The entire PulseForge look is driven by `@theme` CSS custom-property tokens plus a
 handful of utility classes in `artifacts/pulseforge/src/app/globals.css` (Tailwind v4,
-single theme — no `.dark` class / no theme toggle).
+single theme — no `.dark` class, no theme toggle). Almost every component uses the
+semantic tokens (`bg-surface`, `text-foreground`, `border-border`, `bg-accent`, etc.),
+so a retheme is centralized in that one file — you do NOT edit components for color.
 
-**Current aesthetic: LIGHT editorial, flat depth.** White canvas (`--color-background #fff`),
-near-black ink (`--color-foreground #131313`), Anton display headlines, IBM Plex Mono uppercase
-labels/buttons, pill radii. **Accent split for legibility:** `--color-accent` = Jelly-Mint
-`#3cffd0` is FILLS only (buttons/bars/gauge); `--color-accent-light` = Ultraviolet `#5200ff` is
-TEXT/STROKES (links, eyebrows, `gradient-text`, hover borders) — mint text/hairlines are
-unreadable on white, so any `text-accent`/`border-accent` that needs contrast must use
-`*-accent-light`. (Was dark near-black `#131313` canvas + mint accents before 2026-06-21.)
-**Hard rule: NO gradients / shadows / glows.** The shared
-helper classes (`gradient-text`, `glow-border`, `gradient-border-animated`, `hero-glow*`,
-`glass-card*`) are already flattened in globals.css, so those class names are harmless
-no-ops on components. The real violations are **inline Tailwind utilities**
-(`bg-gradient-to-*`, `shadow-*`, `group-hover:shadow-*`) — these are NOT controlled by
-globals.css, so grep components for them after any visual change and flatten to solid
-fills / 1px tokenized borders.
+**Current aesthetic (2026-06-21): BOLD MONOCHROME editorial.** Warm off-white paper
+canvas, black ink, NOTHING but black — every accent token (accent, purple, blue, cyan,
+emerald, success, warning, danger) is mapped to the single ink color. Anton display
+headlines (large, uppercase), IBM Plex Mono uppercase labels, bold 2px section rules,
+black-framed cards. (Earlier iterations were a dark "Verge" theme, then a light
+mint/ultraviolet theme — both abandoned.)
 
-To switch the whole app's look (e.g. dark → white aesthetic), change in that one file:
-- The `@theme` tokens (`--color-background/surface/foreground/muted/border/accent/...`).
-- Utility classes that **hardcode** colors instead of using tokens: `.glass-card`,
-  `.gradient-text`, `.gradient-text-warm`, `.shimmer`, button glow shadows, `.card-interactive`.
-- Base typography lives here too (set `h1..h6` weight/tracking + `body` font-weight for a "bold" feel).
+**Hard rule: flat depth — NO gradients / shadows / glows.** The shared helper classes
+(`gradient-text`, `glow-border`, `gradient-border-animated`, `hero-glow*`, `glass-card*`)
+are already flattened in globals.css. The real violations are **inline Tailwind utilities**
+on components (`bg-gradient-to-*`, `shadow-*`) — grep for them after any visual change.
 
-**Why:** almost every component uses the semantic tokens (`bg-surface`, `text-foreground`,
-`border-border`, `text-accent`, etc.), so retheming is centralized — you do NOT edit components.
+## Gotchas that bite during a retheme
+- **`bg-accent text-black` becomes invisible** when accent maps to black. Any
+  fill-tile that hardcodes `text-black`/`text-white` must switch to `text-background`.
+- **Colored SVG icons bypass tokens.** `components/icons/BrandLogos.tsx` has two kinds:
+  PulseForge's own product icons (HitScore/Simulation/Playbook/Dashboard) — make these
+  `currentColor` so they inherit the token; and real PARTNER brand logos (Musixmatch,
+  Spotify, TikTok, Cyanite…) — these intentionally keep brand colors for recognizability
+  even in a monochrome theme. Flag this exception to the user; don't assume.
+- **Dead data fields** like per-item `gradient`/`iconBg`/`color` strings can linger in
+  component data arrays after you stop rendering them — harmless but grep shows them.
 
-**Remaining hardcoded dark spots** (grep `bg-black`): a few are legitimate and must stay dark
-even in a light theme — the MXM video player frame/overlay, waveform strips, timeline timestamp
-badges over colored clips, modal dimming scrims, and the TikTok brand logo tile. Only convert
-`bg-black/*` panels that hold **text content** (code/lyric/translation previews) to a light surface.
-`text-white` is fine wherever it sits on a colored fill (`bg-accent` buttons/tiles).
+## Layout vs. color
+A pure token swap changes COLOR only. If the user says "the layout didn't change",
+restructure components: section headers (`SectionShell`), hero composition, stat band,
+card framing — not just tokens.

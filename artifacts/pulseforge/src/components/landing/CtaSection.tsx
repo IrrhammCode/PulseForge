@@ -14,7 +14,7 @@ export function CtaSection() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-xl">
-            <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-3.5 py-1.5 text-xs font-medium text-muted backdrop-blur-sm">
+            <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-foreground px-3.5 py-1.5 text-xs font-medium text-foreground">
               <MusixmatchLogo size={18} />
               <span>Musicathon 2026</span>
             </div>

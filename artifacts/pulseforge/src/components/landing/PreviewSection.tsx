@@ -55,7 +55,7 @@ export function PreviewSection() {
             {/* Track card */}
             <div className="glass-card rounded-xl p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-black font-bold text-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-foreground text-background font-bold text-sm">
                   MD
                 </div>
                 <div className="min-w-0 flex-1">

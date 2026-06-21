@@ -13,26 +13,26 @@ export function HeroSection() {
       <div className="hero-glow hero-glow-blue animate-pulse-glow absolute -right-32 top-20" style={{ animationDelay: "2s" }} />
       <div className="hero-glow hero-glow-cyan animate-pulse-glow absolute -bottom-20 left-1/3 opacity-10" style={{ animationDelay: "4s" }} />
 
-      <div className="relative grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
+      {/* Meta bar */}
+      <div className="flex items-center justify-between gap-4 border-b-2 border-foreground pb-3 animate-fade-in">
+        <span className="landing-eyebrow flex items-center gap-2">
+          <MusixmatchLogo size={16} />
+          Music Studio OS
+        </span>
+        <span className="landing-eyebrow">Official entry · Musicathon 2026</span>
+      </div>
+
+      <div className="relative mt-10 grid items-end gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 xl:gap-20">
         {/* Left: Copy */}
         <div className="animate-fade-in">
-          <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-accent/20 bg-accent/5 py-1.5 pl-1.5 pr-4 backdrop-blur-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/20">
-              <MusixmatchLogo size={16} />
-            </span>
-            <span className="text-xs font-medium text-muted">
-              Official entry · <span className="font-semibold text-accent-light">Musicathon 2026</span>
-            </span>
-          </div>
-
-          <h1 className="max-w-xl text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl lg:text-[3.5rem]">
+          <h1 className="text-5xl uppercase leading-[0.9] tracking-tight md:text-7xl lg:text-[5rem]">
             Your music studio,{" "}
             <span className="gradient-text">all in one place</span>
           </h1>
 
           <p className="animate-slide-up-delayed mt-6 max-w-lg text-base leading-relaxed text-muted md:text-lg">
             Write lyrics, craft your track, analyze hit potential, run{" "}
-            <span className="font-medium text-foreground">Viral Lab</span> (1M listener sim + gap analysis),
+            <span className="font-semibold text-foreground">Viral Lab</span> (1M listener sim + gap analysis),
             and plan your launch — without switching between five different tools.
           </p>
 
@@ -46,17 +46,10 @@ export function HeroSection() {
               <Zap className="h-4 w-4" />
               Quick Analyze
             </WelcomeLink>
-            <WelcomeLink
-              href="/viral"
-              className="inline-flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-600 transition-all duration-200 hover:border-orange-500/50 hover:bg-orange-500/15"
-            >
+            <WelcomeLink href="/viral" className="btn-outline">
               <Flame className="h-4 w-4" />
               Viral Lab
             </WelcomeLink>
-          </div>
-
-          <div className="mt-12 border-t border-border/60 pt-8">
-            <PartnerLogoStrip />
           </div>
         </div>
 
@@ -138,6 +131,11 @@ export function HeroSection() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Partner strip — full width under the hero */}
+      <div className="mt-14 border-t-2 border-foreground pt-8">
+        <PartnerLogoStrip />
       </div>
     </div>
   );
