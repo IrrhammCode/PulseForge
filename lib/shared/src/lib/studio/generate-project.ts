@@ -34,7 +34,15 @@ Return ONLY a single JSON object (no markdown, no commentary) with exactly this 
     "accompaniment": string,
     "harmony": string,
     "musicalKey": string,
-    "vocal": { "voiceType": "female"|"male"|"androgynous"|"duet", "delivery": string }
+    "vocal": { "voiceType": "female"|"male"|"androgynous"|"duet", "delivery": string },
+    "sections": {
+      "intro":  { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean },
+      "verse1": { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean },
+      "chorus": { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean },
+      "verse2": { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean },
+      "bridge": { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean },
+      "outro":  { "backing": string, "melody": string, "inlineCues": string, "avoid": string, "instrumental": boolean }
+    }
   },
   "lyrics": {
     "intro": string,
@@ -46,6 +54,10 @@ Return ONLY a single JSON object (no markdown, no commentary) with exactly this 
   }
 }
 Write REAL, complete, singable lyrics for every section (multiple lines each, separated by \\n).
+Fill EVERY musicArrangement.sections entry (intro, verse1, chorus, verse2, bridge, outro) with a
+specific, concrete "backing" (the instrumental bed for that section) plus melody, inlineCues and
+avoid — never leave a section's backing empty. Set "instrumental": true only for purely instrumental
+sections (typically intro/outro), false otherwise.
 Match the requested language of the brief. Be specific and emotionally vivid. Output JSON only.`;
 
 function extractJson(content: string): Record<string, unknown> | null {
@@ -67,6 +79,34 @@ function asStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
   if (typeof v === "string" && v.trim()) return v.split(",").map((s) => s.trim()).filter(Boolean);
   return [];
+}
+
+const SECTION_KEYS = ["intro", "verse1", "chorus", "verse2", "bridge", "outro"] as const;
+type SectionKey = (typeof SECTION_KEYS)[number];
+
+function normalizeSections(
+  v: unknown
+): NonNullable<MusicArrangement["sections"]> | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const src = v as Record<string, unknown>;
+  const out: NonNullable<MusicArrangement["sections"]> = {};
+  for (const key of SECTION_KEYS) {
+    const raw = src[key];
+    if (!raw || typeof raw !== "object") continue;
+    const s = raw as Record<string, unknown>;
+    const dir: NonNullable<NonNullable<MusicArrangement["sections"]>[SectionKey]> = {};
+    const backing = asString(s.backing);
+    const melody = asString(s.melody);
+    const inlineCues = asString(s.inlineCues);
+    const avoid = asString(s.avoid);
+    if (backing) dir.backing = backing;
+    if (melody) dir.melody = melody;
+    if (inlineCues) dir.inlineCues = inlineCues;
+    if (avoid) dir.avoid = avoid;
+    if (typeof s.instrumental === "boolean") dir.instrumental = s.instrumental;
+    if (Object.keys(dir).length > 0) out[key] = dir;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function normalizeLyrics(v: unknown): LyricsSections {
@@ -191,6 +231,7 @@ export async function generateProjectConcept(prompt: string): Promise<GeneratedP
         voiceType,
         customCharacter: asString(vocal.delivery) || asString(vocal.customCharacter) || undefined,
       },
+      sections: normalizeSections(arrangement.sections),
     },
     lyrics: normalizeLyrics(parsed.lyrics),
     _provider: result.provider,
