@@ -21,20 +21,19 @@ const PARTNERS = [
 export function PartnerLogoStrip() {
   return (
     <div>
-      <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted">
+      <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
         Integrated partners
       </p>
       <div className="flex flex-wrap gap-2">
-        {PARTNERS.map(({ name, Logo, tag }) => (
+        {PARTNERS.map(({ name, Logo }) => (
           <div
             key={name}
-            className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm"
+            className="group flex items-center gap-2 rounded-full border border-border bg-surface-elevated/40 py-1.5 pl-1.5 pr-3.5 transition-colors duration-200 hover:border-accent/50"
           >
-            <Logo size={22} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">{name}</p>
-              <p className="text-[10px] uppercase tracking-wider text-gray-500">{tag}</p>
-            </div>
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-white">
+              <Logo size={18} />
+            </span>
+            <span className="text-xs font-semibold text-foreground">{name}</span>
           </div>
         ))}
       </div>
