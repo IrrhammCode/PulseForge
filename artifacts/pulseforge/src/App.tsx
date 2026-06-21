@@ -26,6 +26,7 @@ import { ProduceTab } from "@/components/studio/ProduceTab";
 import { AnalyzeTab } from "@/components/studio/AnalyzeTab";
 import { CompareTab } from "@/components/studio/CompareTab";
 import { LaunchTab } from "@/components/studio/LaunchTab";
+import { OptimizeShipPage } from "@/components/studio/OptimizeShipPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
   if (!isOnboardedClient()) return <Redirect to="/welcome" />;
@@ -95,6 +96,11 @@ function Router() {
         <StudioTab>
           <LaunchTab />
         </StudioTab>
+      </Route>
+      <Route path="/studio/:id/optimize">
+        <Protected>
+          <OptimizeShipPage />
+        </Protected>
       </Route>
       <Route path="/studio/:id">
         <Protected>

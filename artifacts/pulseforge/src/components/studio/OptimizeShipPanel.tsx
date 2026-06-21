@@ -48,7 +48,7 @@ interface OptimizeResult {
   winner: "full" | "conservative";
 }
 
-interface OptimizeShipModalProps {
+interface OptimizeShipPanelProps {
   project: StudioProject;
   onClose: () => void;
   onChanged?: () => void;
@@ -61,7 +61,7 @@ function scoreOf(a: TrackAnalysis) {
   };
 }
 
-export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipModalProps) {
+export function OptimizeShipPanel({ project, onClose, onChanged }: OptimizeShipPanelProps) {
   const activeVersion =
     project.versions.find((v) => v.id === project.activeVersionId) ?? project.versions[0];
   const hasLyrics = !!(
@@ -263,16 +263,8 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
   const running = phase === "running";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      onClick={() => !running && onClose()}
-    >
-      <div
-        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden border-2 border-foreground bg-background"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="mx-auto w-full max-w-lg">
+      <div className="flex w-full flex-col overflow-hidden border-2 border-foreground bg-background">
         {/* Header */}
         <div className="flex items-center justify-between border-b-2 border-foreground px-5 py-4">
           <div className="flex items-center gap-2">
@@ -409,7 +401,6 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
                 <Link
                   href={`/studio/${project.id}/write`}
                   className="btn-secondary text-xs"
-                  onClick={onClose}
                 >
                   <PenLine className="h-3.5 w-3.5" />
                   View lyrics
@@ -418,7 +409,6 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
                   <Link
                     href={`/studio/${project.id}/produce`}
                     className="btn-primary text-xs"
-                    onClick={onClose}
                   >
                     Focus Editor
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -437,7 +427,6 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
                 <Link
                   href={`/studio/${project.id}/launch`}
                   className="btn-secondary text-xs"
-                  onClick={onClose}
                 >
                   <Rocket className="h-3.5 w-3.5" />
                   Launch
