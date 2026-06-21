@@ -176,16 +176,44 @@ export function buildAutoFixPatches(
   const meaning = analysis?.meaning?.explanation || analysis?.lyrics?.analysis || 
     `Captured ${moods[0] || 'raw'} emotions with themes of ${themes[0] || 'longing'}.`;
 
+  // Fall back to the project's own mood tags when partner moods are absent so
+  // the derived fields are never empty.
+  const effectiveMoods: string[] =
+    moods.length ? moods : (currentProject.moodTags || []);
+  const lead = effectiveMoods[0] || currentProject.mood || "the feeling";
+
+  // emotionalArc: build from themes, else moods, else a sensible default arc —
+  // always produces a value so the field is never left blank after Auto Fix.
+  const arcSource = themes.length
+    ? themes.slice(0, 2)
+    : effectiveMoods.slice(0, 2);
+  const emotionalArc = arcSource.length
+    ? `${arcSource.join(" → ")} → release`
+    : "tension → vulnerability → release";
+
+  // vocalCharacter: map the mood profile to a delivery — always returns a value.
+  const moodStr = `${effectiveMoods.join(" ")} ${currentProject.mood || ""}`.toLowerCase();
+  const vocalCharacter = /heartbreak|angst|vulner|sad|melanchol|lonely/.test(moodStr)
+    ? "Intimate breathy verses building to a powerful, raw chorus"
+    : /party|energetic|hype|dance|upbeat|club/.test(moodStr)
+      ? "Confident, punchy delivery with high-energy ad-libs"
+      : /love|romantic|warm|tender|soulful/.test(moodStr)
+        ? "Warm, smooth and emotive with soft falsetto lifts"
+        : /empower|confiden|bold|anthem|fierce/.test(moodStr)
+          ? "Bold, anthemic belt with commanding presence"
+          : "Expressive and dynamic — controlled verses, soaring chorus";
+
+  const existingBrief = currentProject.creativeBrief || {};
   const briefPatch = {
-    story: meaning.slice(0, 320),
-    emotionalArc: themes.length ? ` ${themes.slice(0,2).join(' → ')} → ${moods[0] || 'release'}` : undefined,
-    listenerMoment: `The ${moods[0] || 'feeling'} lands hard.`,
-    vocalCharacter: /heartbreak|angst|vulner/i.test(moods.join(' ')) ? 'Intimate breathy to powerful' : undefined,
+    story: existingBrief.story?.trim() || meaning.slice(0, 320),
+    emotionalArc: existingBrief.emotionalArc?.trim() || emotionalArc,
+    listenerMoment: existingBrief.listenerMoment?.trim() || `The ${lead} lands hard.`,
+    vocalCharacter: existingBrief.vocalCharacter?.trim() || vocalCharacter,
   };
 
   return {
     moodTags: moodPatch,
-    creativeBrief: { ...(currentProject.creativeBrief || {}), ...briefPatch },
+    creativeBrief: { ...existingBrief, ...briefPatch },
     musicArrangement: {
       ...(currentProject.musicArrangement || {}),
       stemEngine: 'musixmatch' as const,
