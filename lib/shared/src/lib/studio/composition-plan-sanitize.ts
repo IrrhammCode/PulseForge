@@ -7,8 +7,8 @@ const MAX_STYLES_PER_CHUNK = 18;
 const MAX_CHUNK_TEXT_LEN = 1200;
 const MIN_CHUNK_MS = 3000;
 const MAX_CHUNK_MS = 120_000;
-/** Safer cap — long plans often trigger ElevenLabs 500s. */
-export const MAX_PLAN_DURATION_MS = 120_000;
+/** Cap per-plan — keeps ElevenLabs happy while allowing full 3-min songs. */
+export const MAX_PLAN_DURATION_MS = 180_000;
 
 function clampDuration(ms: number): number {
   return Math.min(MAX_CHUNK_MS, Math.max(MIN_CHUNK_MS, Math.round(ms)));

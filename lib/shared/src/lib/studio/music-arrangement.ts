@@ -82,12 +82,12 @@ const SECTION_LABEL: Record<SectionKey, string> = {
 };
 
 const SECTION_DURATION: Record<SectionKey, number> = {
-  intro: 12000,
-  verse1: 22000,
-  chorus: 20000,
-  verse2: 22000,
-  bridge: 16000,
-  outro: 14000,
+  intro: 16000,
+  verse1: 28000,
+  chorus: 26000,
+  verse2: 28000,
+  bridge: 20000,
+  outro: 18000,
 };
 
 const DEFAULT_SECTION_NEGATIVE: Partial<Record<SectionKey, string[]>> = {
@@ -253,7 +253,7 @@ export function buildCompositionPlanWithArrangement(
   if (
     lyrics.chorus.trim() &&
     verse2Idx >= 0 &&
-    totalBeforeRepeat < 90_000
+    totalBeforeRepeat < 130_000
   ) {
     const { positive, negative } = buildChunkStyles(
       "chorus",

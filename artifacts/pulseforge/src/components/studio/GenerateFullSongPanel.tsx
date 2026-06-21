@@ -198,7 +198,7 @@ export function GenerateFullSongPanel({
     setGeneratePhase("planning");
     setPlanSummary({
       chunks: compPlan.chunks.length,
-      durationSec: Math.round(durationMs / 1000),
+      durationSec: Math.round(Math.max(durationMs, 120_000) / 1000),
     });
 
     try {
@@ -206,7 +206,7 @@ export function GenerateFullSongPanel({
       const blob = await generateFullSong(fullLyrics, {
         modelId: "music_v2",
         compositionPlan: compPlan,
-        musicLengthMs: Math.min(Math.max(durationMs, 60_000), 180_000),
+        musicLengthMs: Math.min(Math.max(durationMs, 120_000), 240_000),
       });
 
       await setBlobPreview(blob, false);
