@@ -1,0 +1,29 @@
+{
+  "name": "pulseforge",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm run dev -w @pulseforge/backend\" \"npm run dev -w @pulseforge/frontend\"",
+    "dev:frontend": "npm run dev -w @pulseforge/frontend",
+    "dev:backend": "npm run dev -w @pulseforge/backend",
+    "build": "npm run build -w @pulseforge/backend && npm run build -w @pulseforge/frontend",
+    "start": "concurrently \"npm run start -w @pulseforge/backend\" \"npm run start -w @pulseforge/frontend\"",
+    "test": "npm run test -w @pulseforge/shared && npm run test -w @pulseforge/backend",
+    "test:shared": "npm run test -w @pulseforge/shared",
+    "test:backend": "npm run test -w @pulseforge/backend",
+    "test:e2e": "playwright test",
+    "lint": "npm run lint -w @pulseforge/frontend",
+    "db:push": "npm run db:push -w @pulseforge/backend",
+    "db:generate": "npm run db:generate -w @pulseforge/backend",
+    "dev:fresh": "lsof -ti:3000,3001,3002,4000 | xargs kill -9 2>/dev/null; npm run dev"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "concurrently": "^9.1.2"
+  }
+}
