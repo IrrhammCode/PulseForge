@@ -1,20 +1,28 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Flame, Music2, Rocket, Trash2 } from "lucide-react";
 import { getViralLabLink } from "@/lib/navigation";
 import { hasLyricsContent } from "@/lib/studio/lyrics";
 import type { StudioProject } from "@/types/studio";
 import { PROJECT_STATUSES } from "@/types/studio";
+import { OptimizeShipModal } from "@/components/studio/OptimizeShipModal";
 
 interface ProjectCardProps {
   project: StudioProject;
   onDelete: (id: string) => void;
+  onChanged?: () => void;
 }
 
-export function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export function ProjectCard({ project, onDelete, onChanged }: ProjectCardProps) {
   const status = PROJECT_STATUSES[project.status];
   const activeVersion =
     project.versions.find((v) => v.id === project.activeVersionId) ?? project.versions[0];
   const canViral = activeVersion ? hasLyricsContent(activeVersion.lyrics) : false;
+  const hasChorus = !!(
+    activeVersion &&
+    (activeVersion.lyrics.chorus?.trim() || activeVersion.lyrics.raw?.trim())
+  );
+  const [optimizeOpen, setOptimizeOpen] = useState(false);
   const updated = new Date(project.updatedAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -72,15 +80,25 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
-        <Link
-          href={`/studio/${project.id}/launch`}
-          className="btn-secondary w-full justify-center !py-2 text-xs"
-          title="Optimize & Ship"
+        <button
+          type="button"
+          onClick={() => setOptimizeOpen(true)}
+          disabled={!hasChorus}
+          className="btn-secondary w-full justify-center !py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+          title={hasChorus ? "Optimize & Ship" : "Add chorus lyrics in Write first"}
         >
           <Rocket className="h-3.5 w-3.5" />
           Optimize &amp; Ship
-        </Link>
+        </button>
       </div>
+
+      {optimizeOpen && (
+        <OptimizeShipModal
+          project={project}
+          onClose={() => setOptimizeOpen(false)}
+          onChanged={onChanged}
+        />
+      )}
     </article>
   );
 }

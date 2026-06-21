@@ -17,7 +17,7 @@ import type { StudioProjectStatus } from "@/types/studio";
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { projects, ready, create, remove } = useStudioProjects();
+  const { projects, ready, create, remove, refresh } = useStudioProjects();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | StudioProjectStatus>("all");
@@ -278,6 +278,7 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   onDelete={handleDelete}
+                  onChanged={refresh}
                 />
               ))}
             </div>

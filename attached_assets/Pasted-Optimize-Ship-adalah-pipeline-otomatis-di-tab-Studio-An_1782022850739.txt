@@ -1,0 +1,75 @@
+Optimize & Ship adalah pipeline otomatis di tab Studio → Analyze (juga dari kartu project di dashboard). Tujuannya: scan skor + gap, perbaiki lirik/brief/arrangement/launch plan, lalu simpan ke project kalau hasilnya lebih baik — siap lanjut generate lagu atau ke Produce/Launch.
+
+Syarat bisa jalan
+Project punya lirik (minimal chorus di tab Write)
+Kalau belum ada lirik → tombol disabled, pesan: "Add chorus lyrics in Write first"
+Alur kerja (5 langkah)
+1. Analyze baseline
+2. Partner fix
+3. Sandbox x2
+4. Pilih terbaik
+5. Commit ke project
+Generate / Produce / Launch
+Langkah	Apa yang terjadi
+1. Analyzing
+Jalankan Analyze (Musixmatch, Cyanite, Songstats, scoring) kalau belum ada / stale
+2. Coach-fix
+Partner fix via API: Musixmatch moods/themes/meaning, rewrite coach, genre/mood tags, creative brief
+3. Sandbox
+Simulasi 2 kandidat: full (lirik + arrangement) vs conservative (tanpa edit lirik agresif). Masing-masing di-re-analyze tanpa save dulu
+4. Review
+Bandingkan skor before vs after (score gate)
+5. Committing
+Simpan fix terbaik ke project
+Apa yang diubah saat commit
+Fix disimpan ke:
+
+Lirik — hook, chorus, gap-targeted lyric fixes, MXM coach suggestions
+Project — mood/genre tags, creative brief, BPM, music arrangement
+Launch plan — What-If sliders (budget, TikTok seeds, playlist pitches), catatan marketing playbook
+Analysis — skor baru setelah fix
+Timeline edits — seed NLE timeline dari hasil optimize
+Intinya: Optimize = perbaiki konten & metadata; Ship = siap rilis (launch settings + skor naik).
+
+Score gate — kapan dianggap “berhasil”?
+Sistem bandingkan skor sebelum/sesudah:
+
+Lolos jika: hit potential +3 ATAU hook strength +5
+Gagal jika: hook turun >5 poin
+Kalau tidak ada kenaikan meaningful → gate tidak pass
+Penting: fix tetap disimpan meski gate tidak pass — lirik/brief/launch tetap ke-update; UI menampilkan "Fixes saved to project" bukan "ready to ship".
+
+Status UI:
+
+Optimized — fixes saved, ready to ship → gate pass + committed
+Fixes saved to project → committed tapi skor belum naik cukup → bisa Try again (mode lebih agresif)
+Setelah selesai — langkah user
+Dari tab Analyze:
+
+Generate Full Song — generate lagu dari lirik/arrangement yang sudah diperbaiki (ElevenLabs)
+Generate & open Produce — generate + langsung buka Produce
+Dari wizard (dashboard):
+
+View updated lyrics → Write
+Focus Editor → Produce (kalau gate pass)
+Try again → attempt ke-2, lebih agresif + fresh analyze
+Optimize & Ship vs Auto Fix All
+Optimize & Ship	Auto Fix All
+Partner API
+Ya (MXM coach, dll.)
+Tidak — rules lokal saja
+Sandbox preview
+Ya — 2 kandidat, re-analyze
+Tidak
+Score gate
+Ya
+Tidak
+Commit
+Otomatis (best candidate)
+Langsung apply
+Cocok untuk
+Flow “analyze → fix → verify → ship”
+Fix cepat tanpa sandbox
+Di mana tombolnya
+Studio → Analyze — setelah Analyze version, tombol ungu Optimize & Ship
+Dashboard — kartu project → Optimize & Ship (modal wizard)

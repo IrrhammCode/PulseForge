@@ -1,3 +1,1 @@
-- [Vercel/Next → Vite port gotchas](vercel-vite-port.md) — process.env crashes browser (fix: vite define), verify named exports via tsc, hooks-after-early-return only fail at runtime.
-- [PulseForge theme system](pulseforge-theme-system.md) — token-driven flat theme (now BOLD MONOCHROME, off-white+black) in one globals.css; gotchas: bg-accent+text-black goes invisible, colored SVG icons bypass tokens, color≠layout.
-- [Sandbox logo sourcing](sandbox-logo-sourcing.md) — dev sandbox egress is allowlisted; most logo CDNs fail DNS, but Google s2 favicons + unavatar github/twitter avatars (400px) work for real brand marks.
+- [Studio local-first persistence](studio-local-persistence.md) — `command*` writes localStorage but fires no same-tab `storage` event; pass an `onChanged`/refresh callback to update sibling components.
