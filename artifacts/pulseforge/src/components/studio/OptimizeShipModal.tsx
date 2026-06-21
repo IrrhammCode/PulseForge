@@ -130,10 +130,19 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
           });
         };
 
-        const [fullAnalysis, conservativeAnalysis] = await Promise.all([
+        // Promise.allSettled (not Promise.all) so a failing candidate fetch
+        // never leaves a sibling promise rejection unhandled — an unhandled
+        // rejection would be caught by ChunkLoadRecovery and reload the page.
+        const settled = await Promise.allSettled([
           analyzeCandidate(fullLyrics),
           analyzeCandidate(conservativeLyrics),
         ]);
+        const firstRejected = settled.find(
+          (r): r is PromiseRejectedResult => r.status === "rejected"
+        );
+        if (firstRejected) throw firstRejected.reason;
+        const fullAnalysis = (settled[0] as PromiseFulfilledResult<TrackAnalysis>).value;
+        const conservativeAnalysis = (settled[1] as PromiseFulfilledResult<TrackAnalysis>).value;
         setStep("sandbox", "done", "2 candidates re-analyzed");
 
         // 4. Score gate review — pick best by overall, tiebreak hook.
@@ -164,6 +173,12 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
 
         // 5. Commit best fix to project (always persisted, even if gate fails)
         setStep("commit", "running");
+        // Validate the analysis shape BEFORE writing anything. A malformed
+        // analysis (missing hitPotential.breakdown) would crash the dashboard
+        // render on the next refresh; failing fast here keeps state consistent.
+        if (!bestAnalysis?.hitPotential?.breakdown) {
+          throw new Error("Optimize produced an invalid analysis — nothing was changed");
+        }
         const commitPatch: Record<string, unknown> = {
           creativeBrief: patches.creativeBrief,
           musicArrangement: patches.musicArrangement,
@@ -202,7 +217,7 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
   );
 
   useEffect(() => {
-    if (hasLyrics) run(false);
+    if (hasLyrics) void run(false).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

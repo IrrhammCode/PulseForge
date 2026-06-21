@@ -21,10 +21,8 @@ export function ChunkLoadRecovery() {
       const msg = event.message?.toLowerCase() ?? "";
       if (
         isChunkOrWebpackError(event.error) ||
-        msg.includes("reading 'call'") ||
         msg.includes("loading chunk") ||
-        msg.includes("vendor-chunks") ||
-        msg.includes("enoent")
+        msg.includes("vendor-chunks")
       ) {
         event.preventDefault();
         tryReloadOnce();
