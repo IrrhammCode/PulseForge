@@ -25,12 +25,12 @@ export function HeroSection() {
       <div className="relative mt-10 grid items-end gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 xl:gap-20">
         {/* Left: Copy */}
         <div className="animate-fade-in">
-          <h1 className="text-5xl uppercase leading-[0.9] tracking-tight md:text-7xl lg:text-[5rem]">
+          <h1 className="text-5xl uppercase leading-[0.9] tracking-tight md:text-7xl lg:text-[5rem] 2xl:text-[5.75rem] 3xl:text-[6.75rem] 4xl:text-[8rem]">
             Your music studio,{" "}
             <span className="gradient-text">all in one place</span>
           </h1>
 
-          <p className="animate-slide-up-delayed mt-6 max-w-lg text-base leading-relaxed text-muted md:text-lg">
+          <p className="animate-slide-up-delayed mt-6 max-w-lg text-base leading-relaxed text-muted md:text-lg 2xl:max-w-xl 2xl:text-xl">
             Write lyrics, craft your track, analyze hit potential, run{" "}
             <span className="font-semibold text-foreground">Viral Lab</span> (1M listener sim + gap analysis),
             and plan your launch — without switching between five different tools.
@@ -54,7 +54,7 @@ export function HeroSection() {
         </div>
 
         {/* Right: Live preview card */}
-        <div className="w-full animate-slide-up lg:max-w-md lg:justify-self-end xl:max-w-lg" style={{ animationDelay: "0.2s" }}>
+        <div className="w-full animate-slide-up lg:max-w-md lg:justify-self-end xl:max-w-lg 2xl:max-w-xl 3xl:max-w-2xl" style={{ animationDelay: "0.2s" }}>
           <div className="glass-card-hover overflow-hidden rounded-2xl">
             {/* Window chrome */}
             <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-surface/50 px-5 py-3">

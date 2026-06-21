@@ -9,7 +9,7 @@ import {
 export function Footer() {
   return (
     <footer className="mt-12 border-t border-border">
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 2xl:max-w-7xl 3xl:max-w-[96rem] 4xl:max-w-[120rem]">
         <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr_1fr] md:items-start">
           <div>
             <div className="flex items-center gap-2.5">

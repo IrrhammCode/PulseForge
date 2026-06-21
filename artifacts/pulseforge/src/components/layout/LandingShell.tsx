@@ -8,7 +8,7 @@ export function LandingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 2xl:max-w-7xl 3xl:max-w-[96rem] 4xl:max-w-[120rem] 3xl:h-20">
           <Link href="/welcome" className="group flex items-center gap-3 transition hover:opacity-90">
             <PulseForgeLogo size={32} />
             <div>

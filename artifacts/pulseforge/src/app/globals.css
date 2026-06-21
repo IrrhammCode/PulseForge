@@ -36,6 +36,10 @@
   --radius-xl: 20px;
   --radius-2xl: 24px;
   --radius-3xl: 30px;
+
+  /* Large-monitor breakpoints (24" / 27" / 34" ultrawide) on top of Tailwind's defaults */
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
 }
 
 @layer base {

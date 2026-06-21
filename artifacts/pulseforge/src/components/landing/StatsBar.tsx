@@ -36,7 +36,7 @@ function StatItem({ stat, index }: { stat: typeof STATS[number]; index: number }
           {stat.label}
         </p>
       </div>
-      <p className="font-display text-4xl tabular-nums leading-none text-foreground md:text-5xl">
+      <p className="font-display text-4xl tabular-nums leading-none text-foreground md:text-5xl 2xl:text-6xl 3xl:text-7xl">
         {stat.prefix}
         {count}
         <span className="text-2xl text-foreground/70">{stat.suffix}</span>
