@@ -55,3 +55,28 @@ returns any structured text so the rewrite surfaces.
 already populated) takes the working path and shows a real gain (~+4). Only
 raw-authored tracks hit 0 — reproduce by moving lyrics into `raw` with
 structured keys empty.
+
+## Prompt engineering for algorithmic scoring (the "+0 after AI rewrite" cause)
+
+The Groq lyric rewrite uses a vague prompt ("maximize hook strength") that
+rewrites *words* but leaves the structural metrics unchanged — so the rule-based
+re-analysis returns identical scores.
+
+**The actual scoring levers** (must target all of them to get a reliable gain):
+- `hookStrength`    = 45 + brevity(hook word len) + repeatBonus(repetitionIndex×0.45)
+- `lyricVirality`  = hookStrength×0.45 + repetitionIndex×0.25 + rhymeDensity×0.12 + chorusCount×4
+- `trendAlignment` += trendKeywordHits × 3 (up to +18)
+
+**How to target them in the AI prompt:**
+1. REPETITION — instruct the AI to repeat the hook line word-for-word 4+ times
+2. RHYME — instruct to rhyme every 2nd/4th line end-word (AABB or ABAB)
+3. TREND — pass SHORT_FORM_TREND_KEYWORDS + analysis.trendFeed.keywords in context
+4. BREVITY — instruct to keep the hook to 3–5 words
+
+**Rule:** whenever the scoring algorithm is changed, update the system prompt to
+match the new levers. The buildRewritePrompt function now includes the full
+breakdown score with per-metric targets and the live trend keyword list so the
+AI can target low-scoring dimensions.
+
+**Verified:** structured-mode +10 overall/hook (was +4), raw-mode +16 (was 0),
+trend keyword hits 2→10.

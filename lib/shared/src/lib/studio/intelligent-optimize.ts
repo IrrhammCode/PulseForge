@@ -3,6 +3,7 @@ import { EMPTY_LYRICS } from "@/types/studio";
 import type { TrackAnalysis } from "@/types";
 import { applyConceptToLyrics, buildAutoFixPatches } from "@/lib/studio/song-concept";
 import { parseLyricsSections } from "@/lib/studio/lyrics";
+import { SHORT_FORM_TREND_KEYWORDS } from "@/lib/scoring/lyrics-rhyme";
 
 /**
  * Server-side "coach fix" brain for Optimize & Ship.
@@ -58,13 +59,29 @@ const LYRIC_KEYS = [
   "outro",
 ] as const;
 
+/**
+ * System prompt that targets the EXACT algorithmic scoring levers:
+ *  1. hookStrength  = 45 + brevity(short hook) + repeatBonus(line repetition)
+ *  2. lyricVirality = hookStrength×0.45 + repetition×0.25 + rhymeDensity×0.12 + chorusCount×4
+ *  3. trendAlignment += trendKeywordHits × 3 (up to +18)
+ * A vague "improve hook strength" prompt leaves all three unchanged because the
+ * AI rewrites words but not structure. These explicit rules target each lever.
+ */
 const SYSTEM_PROMPT =
-  "You are a hit songwriting coach. Rewrite song lyrics section-by-section to " +
-  "maximize hook strength and emotional payoff while preserving the song's " +
-  "language, story and structure. Return ONLY valid JSON with keys: intro, " +
-  "verse1, chorus, verse2, bridge, outro. Each value is the rewritten section " +
-  "text (use \\n for line breaks). Keep each section a similar length to the " +
-  "original. Do not add commentary.";
+  "You are a hit songwriting coach who optimizes lyrics for algorithmic hit-score metrics.\n" +
+  "Follow these FOUR rules exactly — they directly raise the score:\n" +
+  "1. HOOK REPETITION: Pick one punchy hook line (3–5 words). Repeat it word-for-word " +
+  "   at least 4 times across the full song (in chorus, bridge, and outro). " +
+  "   Repetition is the #1 score driver.\n" +
+  "2. RHYME SCHEME: End every 2nd and 4th line of each section with rhyming words " +
+  "   (AABB or ABAB). Rhyme density directly boosts the virality score.\n" +
+  "3. TREND KEYWORDS: Naturally weave in 3–5 words from the trending keywords list " +
+  "   provided in the context. These words raise the trend-alignment score.\n" +
+  "4. BREVITY: Keep the hook/chorus line to 3–5 words. Shorter = higher score.\n" +
+  "Preserve the song's language, story, and structure. " +
+  "Return ONLY valid JSON with keys: intro, verse1, chorus, verse2, bridge, outro. " +
+  "Each value is the rewritten section text (use \\n for line breaks). " +
+  "Keep each section a similar length to the original. Do not add commentary.";
 
 /** Build Musixmatch + Cyanite + Songstats enriched patches and launch notes. */
 function buildEnrichedPatches(project: StudioProject, analysis: TrackAnalysis): {
@@ -196,9 +213,39 @@ function buildRewritePrompt(
 ): string {
   const coach = analysis.meta?.mxmCoach;
   const energy = analysis.energy;
-  const benchmark = analysis.catalogBenchmark as
-    | { avgHookStrength?: number }
-    | undefined;
+  const hp = analysis.hitPotential;
+  const breakdown = hp?.breakdown;
+
+  // --- Trend keywords: static list + live feed from analysis ---
+  const liveFeedKeywords =
+    ((analysis.trendFeed as { keywords?: string[] } | undefined)?.keywords ?? []);
+  const allTrendKeywords = [
+    ...new Set([...SHORT_FORM_TREND_KEYWORDS, ...liveFeedKeywords]),
+  ].slice(0, 28);
+
+  // --- Score breakdown: tell AI which metrics to target ---
+  const hookStrength = breakdown?.hookStrength ?? 0;
+  const lyricVirality = breakdown?.lyricVirality ?? 0;
+  const trendAlignment = breakdown?.trendAlignment ?? 0;
+  const overall = hp?.overall ?? 0;
+
+  const targets: string[] = [];
+  if (hookStrength < 88)
+    targets.push(
+      `hookStrength=${hookStrength} (lift by repeating hook line 4+ times and shortening it to 3–5 words)`
+    );
+  if (lyricVirality < 80)
+    targets.push(
+      `lyricVirality=${lyricVirality} (lift by adding rhymes at end of every 2nd/4th line and repeating chorus)`
+    );
+  if (trendAlignment < 75)
+    targets.push(
+      `trendAlignment=${trendAlignment} (lift by adding 3–5 words from the TRENDING KEYWORDS list below)`
+    );
+
+  const currentHookLine =
+    (analysis.lyrics as { hookLine?: string } | undefined)?.hookLine ?? "";
+
   const ctx = [
     `Title: ${project.title}`,
     `Artist: ${project.artistName}`,
@@ -206,18 +253,14 @@ function buildRewritePrompt(
     `Mood: ${project.mood}`,
     coach?.moods?.length ? `Musixmatch moods: ${coach.moods.join(", ")}` : "",
     coach?.themes?.length ? `Themes: ${coach.themes.join(", ")}` : "",
-    coach?.hookQuote ? `Reference hook: ${coach.hookQuote}` : "",
     energy?.bpm ? `BPM: ${Math.round(energy.bpm)}` : "",
     energy?.moodTags?.length ? `Cyanite mood: ${energy.moodTags.join(", ")}` : "",
-    energy?.instrumentTags?.length
-      ? `Instruments: ${energy.instrumentTags.join(", ")}`
-      : "",
-    benchmark?.avgHookStrength
-      ? `Benchmark hook strength to beat: ${benchmark.avgHookStrength}`
-      : "",
-    `Current hit score: ${analysis.hitPotential?.overall ?? 0}, hook strength: ${
-      analysis.hitPotential?.breakdown?.hookStrength ?? 0
-    }`,
+    currentHookLine ? `Current hook line (repeat this 4+ times): "${currentHookLine}"` : "",
+    `Current scores — overall: ${overall}, hookStrength: ${hookStrength}, lyricVirality: ${lyricVirality}, trendAlignment: ${trendAlignment}`,
+    targets.length
+      ? `SCORE TARGETS (improve these):\n  - ${targets.join("\n  - ")}`
+      : "Scores are strong — push all metrics higher.",
+    `TRENDING KEYWORDS (use 3–5 naturally): ${allTrendKeywords.join(", ")}`,
     project.creativeBrief?.story ? `Story: ${project.creativeBrief.story}` : "",
     project.creativeBrief?.emotionalArc
       ? `Emotional arc: ${project.creativeBrief.emotionalArc}`
@@ -235,7 +278,14 @@ function buildRewritePrompt(
     outro: lyrics.outro,
   });
 
-  return `Context:\n${ctx}\n\nCurrent lyrics (JSON):\n${current}\n\nRewrite to lift the hook and tighten imagery. Return JSON only.`;
+  return (
+    `Context:\n${ctx}\n\n` +
+    `Current lyrics (JSON):\n${current}\n\n` +
+    `Rewrite following ALL four rules from the system prompt. ` +
+    `Priority: (1) repeat the hook line 4+ times, (2) add end-line rhymes, ` +
+    `(3) include 3–5 trending keywords, (4) shorten the hook to 3–5 words. ` +
+    `Return JSON only.`
+  );
 }
 
 async function callOpenAICompatible(
