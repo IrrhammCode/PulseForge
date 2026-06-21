@@ -2,6 +2,7 @@
 import { Link } from "wouter";
 import { ArrowLeft, ChevronDown, Copy } from "lucide-react";
 import { CloudSyncButton } from "@/components/studio/CloudSyncButton";
+import { LaunchButton } from "@/components/studio/LaunchButton";
 import { ViralLabCTA } from "@/components/viral/ViralLabCTA";
 import type { StudioProject } from "@/types/studio";
 import { PROJECT_STATUSES, primaryGenreLabel, primaryMoodLabel } from "@/types/studio";
@@ -64,6 +65,7 @@ export function StudioHubHeader({ project, onProjectChange }: StudioHubHeaderPro
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <LaunchButton project={project} onProjectChange={onProjectChange} />
         <CloudSyncButton project={project} />
         <ViralLabCTA projectId={project.id} compact />
         <button
