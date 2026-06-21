@@ -91,20 +91,18 @@ export function OptimizeShipPanel({ project, onClose, onChanged }: OptimizeShipP
       setSteps(BASE_STEPS.map((s) => ({ ...s, status: "pending", detail: undefined })));
 
       try {
-        // 1. Analyze baseline
+        // 1. Analyze baseline — ALWAYS a fresh server-side run from the
+        // current lyrics. Reusing a cached analysis made before/after
+        // inconsistent (the cache could already include a prior optimize
+        // gain, or be computed with different partner/trend state than the
+        // re-analyzed candidates), which produced a misleading +0/+0.
         setStep("analyze", "running");
-        let baseline: TrackAnalysis;
         const baselineLyricsBody = composeLyricsBody(activeVersion.lyrics);
-        if (activeVersion.analysis && !activeVersion.analysisStale && !aggressive) {
-          baseline = activeVersion.analysis;
-          setStep("analyze", "done", "Used existing analysis");
-        } else {
-          baseline = await analyzeStudioVersion(project, {
-            versionId: activeVersion.id,
-            lyricsBody: baselineLyricsBody,
-          });
-          setStep("analyze", "done", "Fresh analysis run");
-        }
+        const baseline: TrackAnalysis = await analyzeStudioVersion(project, {
+          versionId: activeVersion.id,
+          lyricsBody: baselineLyricsBody,
+        });
+        setStep("analyze", "done", "Fresh analysis run");
         const before = scoreOf(baseline);
 
         // 2. Partner coach fix — server-side runIntelligentOptimize
@@ -150,23 +148,29 @@ export function OptimizeShipPanel({ project, onClose, onChanged }: OptimizeShipP
           setStep("coach", "done", "Local engine (partners offline)");
         }
 
-        // 3. Sandbox 2 candidates (re-analyze without saving)
+        // 3. Sandbox 2 candidates (re-analyze without saving). Both candidates
+        // are evaluated under the SAME coach patch context (bpmTarget / mood /
+        // arrangement) so non-lyric gains are measured too:
+        //   - conservative = patched project + original lyrics
+        //   - full         = patched project + rewritten lyrics
+        // `before` stays the fresh UNPATCHED baseline, so the reported delta
+        // captures the full optimize effect (patches + rewrite). The trend feed
+        // is cached/deterministic within a run, so baseline vs. candidates is a
+        // clean comparison with no drift.
         setStep("sandbox", "running");
         const patchedProject = { ...project, ...patches } as StudioProject;
         const conservativeLyrics = activeVersion.lyrics;
 
-        const analyzeCandidate = async (lyrics: typeof fullLyrics) => {
-          const candidateProject = {
-            ...patchedProject,
-            versions: project.versions.map((v) =>
-              v.id === activeVersion.id ? { ...v, lyrics } : v
-            ),
-          } as StudioProject;
-          return analyzeStudioVersion(candidateProject, {
-            versionId: activeVersion.id,
-            lyricsBody: composeLyricsBody(lyrics),
-          });
-        };
+        const analyzeCandidate = (lyrics: LyricsSections) =>
+          analyzeStudioVersion(
+            {
+              ...patchedProject,
+              versions: project.versions.map((v) =>
+                v.id === activeVersion.id ? { ...v, lyrics } : v
+              ),
+            } as StudioProject,
+            { versionId: activeVersion.id, lyricsBody: composeLyricsBody(lyrics) }
+          );
 
         // Promise.allSettled (not Promise.all) so a failing candidate fetch
         // never leaves a sibling promise rejection unhandled — an unhandled

@@ -1,1 +1,2 @@
 - [Studio local-first persistence](studio-local-persistence.md) — `command*` writes localStorage but fires no same-tab `storage` event; pass an `onChanged`/refresh callback to update sibling components.
+- [Optimize & Ship +0/+0](optimize-ship-pipeline.md) — baseline must be a fresh analysis, never the cached one, or before==after.
