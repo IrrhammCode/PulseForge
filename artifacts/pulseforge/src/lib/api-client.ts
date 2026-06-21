@@ -1,6 +1,6 @@
 import type { TrackAnalysis, WhatIfParams } from "@/types";
 import type { AppTrack } from "@/lib/musixmatch/client";
-import type { StudioProject } from "@/types/studio";
+import type { LyricsSections, StudioProject } from "@/types/studio";
 import type { ViralAnalysis } from "@/types/viral";
 import type { SystemCapabilities } from "@/lib/partners/capabilities";
 
@@ -121,6 +121,48 @@ export async function analyzeStudioVersion(
   }
 
   return data.analysis;
+}
+
+export interface CoachFixResult {
+  tier: "local" | "partner" | "ai";
+  aiBackend: "b.ai" | "groq" | "n8n" | "none";
+  patches: {
+    moodTags?: string[];
+    bpmTarget?: number;
+    creativeBrief: Record<string, unknown>;
+    musicArrangement: Record<string, unknown>;
+  };
+  lyrics: LyricsSections;
+  notes: string[];
+  intelligence: { musixmatch: boolean; cyanite: boolean; songstats: boolean };
+}
+
+/**
+ * Server-side "coach fix" step of Optimize & Ship. Runs runIntelligentOptimize
+ * (local -> partner -> ai) and returns enriched patches plus a candidate lyric
+ * rewrite. Callers should fall back to the local engine if this rejects.
+ */
+export async function coachFixLyrics(
+  project: StudioProject,
+  analysis: TrackAnalysis,
+  options?: { versionId?: string; lyrics?: LyricsSections }
+): Promise<CoachFixResult> {
+  const res = await fetch("/api/studio/lyrics/coach-fix", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      project,
+      analysis,
+      versionId: options?.versionId,
+      lyrics: options?.lyrics,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new ApiError(data.error ?? "Coach fix failed", res.status);
+  }
+  return data as CoachFixResult;
 }
 
 export interface VoicePreviewOptions {

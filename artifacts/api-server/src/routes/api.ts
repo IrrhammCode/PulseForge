@@ -21,6 +21,7 @@ import { getMockAnalysis } from "@pulseforge/shared/lib/mock-data";
 import { DEFAULT_WHAT_IF } from "@pulseforge/shared/lib/constants";
 import { buildVersionSnapshot } from "@pulseforge/shared/lib/domain/version-snapshot";
 import { buildStudioTrack, runStudioAnalysis } from "@pulseforge/shared/lib/scoring/studio-analysis";
+import { runIntelligentOptimize } from "@pulseforge/shared/lib/studio/intelligent-optimize";
 import { fetchStudioDraftPartners } from "@pulseforge/shared/lib/scoring/studio-draft-partners";
 import { runViralAnalysis } from "@pulseforge/shared/lib/viral/run-viral-analysis";
 import { getLiveTrendFeed } from "@pulseforge/shared/lib/trends/feed";
@@ -33,7 +34,7 @@ import { searchConcerts } from "@pulseforge/shared/lib/jambase/client";
 import { triggerWorkflow } from "@pulseforge/shared/lib/n8n/client";
 import type { WhatIfParams, TrackAnalysis } from "@pulseforge/shared/types";
 import type { AppTrack } from "@pulseforge/shared/lib/musixmatch/client";
-import type { StudioProject } from "@pulseforge/shared/types/studio";
+import type { LyricsSections, StudioProject } from "@pulseforge/shared/types/studio";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
@@ -367,6 +368,43 @@ apiRouter.post("/studio/analyze", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : "Studio analysis failed" });
+  }
+});
+
+apiRouter.post("/studio/lyrics/coach-fix", async (req, res) => {
+  try {
+    const body = req.body as {
+      project: StudioProject;
+      analysis: TrackAnalysis;
+      lyrics?: LyricsSections;
+      versionId?: string;
+    };
+
+    if (!body.project?.id || !body.analysis) {
+      res.status(400).json({ error: "Project and baseline analysis are required" });
+      return;
+    }
+
+    const versionId = body.versionId ?? body.project.activeVersionId;
+    const version =
+      body.project.versions.find((v) => v.id === versionId) ??
+      body.project.versions[0];
+    const lyrics = body.lyrics ?? version?.lyrics;
+    if (!lyrics) {
+      res.status(400).json({ error: "Lyrics are required for coach fix" });
+      return;
+    }
+
+    const result = await runIntelligentOptimize({
+      project: body.project,
+      analysis: body.analysis,
+      lyrics,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      error: err instanceof Error ? err.message : "Coach fix failed",
+    });
   }
 });
 

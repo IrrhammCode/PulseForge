@@ -29,7 +29,12 @@ export function ProjectCard({ project, onDelete, onChanged }: ProjectCardProps) 
   });
 
   return (
-    <article className="group flex flex-col border-2 border-foreground bg-surface p-5 transition hover:-translate-y-0.5">
+    // Stable hover target: the wrapper keeps its layout box fixed while the inner
+    // card lifts via group-hover. Putting the transform on the hovered element
+    // itself made the card slide out from under the cursor → un-hover → drop →
+    // re-hover, an oscillation that read as cards "refreshing" repeatedly.
+    <div className="group h-full">
+    <article className="flex h-full flex-col border-2 border-foreground bg-surface p-5 transition duration-200 group-hover:-translate-y-0.5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-foreground">
           <Music2 className="h-5 w-5 text-foreground" />
@@ -100,5 +105,6 @@ export function ProjectCard({ project, onDelete, onChanged }: ProjectCardProps) 
         />
       )}
     </article>
+    </div>
   );
 }

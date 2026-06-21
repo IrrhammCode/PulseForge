@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import type { StudioProject } from "@/types/studio";
 import type { TrackAnalysis } from "@/types";
-import { analyzeStudioVersion, ApiError } from "@/lib/api-client";
+import { analyzeStudioVersion, ApiError, coachFixLyrics } from "@/lib/api-client";
 import { composeLyricsBody } from "@/lib/studio/lyrics";
 import { applyConceptToLyrics, buildAutoFixPatches } from "@pulseforge/shared/lib/studio/song-concept";
+import type { LyricsSections } from "@/types/studio";
 import {
   commandSaveAnalysis,
   commandSaveLyrics,
@@ -106,15 +107,52 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
         }
         const before = scoreOf(baseline);
 
-        // 2. Partner coach fix
+        // 2. Partner coach fix — server-side runIntelligentOptimize
+        // (local → partner → ai). Integrates Musixmatch / Cyanite / Songstats
+        // signals and an optional AI lyric rewrite. Falls back to the local
+        // deterministic engine if the endpoint is unavailable.
         setStep("coach", "running");
-        const patches = buildAutoFixPatches(baseline.meta?.mxmCoach, project, baseline);
-        setStep("coach", "done", "Built mood / brief / arrangement fixes");
+        let patches: {
+          moodTags?: string[];
+          bpmTarget?: number;
+          creativeBrief: Record<string, unknown>;
+          musicArrangement: Record<string, unknown>;
+        };
+        let fullLyrics: LyricsSections;
+        try {
+          const coach = await coachFixLyrics(project, baseline, {
+            versionId: activeVersion.id,
+            lyrics: activeVersion.lyrics,
+          });
+          patches = coach.patches;
+          fullLyrics = coach.lyrics;
+          const tierLabel =
+            coach.tier === "ai"
+              ? `AI rewrite (${coach.aiBackend})`
+              : coach.tier === "partner"
+                ? "Partner signals"
+                : "Local engine";
+          const partners = [
+            coach.intelligence.musixmatch && "Musixmatch",
+            coach.intelligence.cyanite && "Cyanite",
+            coach.intelligence.songstats && "Songstats",
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          setStep("coach", "done", partners ? `${tierLabel} · ${partners}` : tierLabel);
+        } catch {
+          // Graceful degradation: deterministic local engine.
+          patches = buildAutoFixPatches(baseline.meta?.mxmCoach, project, baseline);
+          fullLyrics = applyConceptToLyrics(
+            { ...project, ...patches } as StudioProject,
+            activeVersion.lyrics
+          );
+          setStep("coach", "done", "Local engine (partners offline)");
+        }
 
         // 3. Sandbox 2 candidates (re-analyze without saving)
         setStep("sandbox", "running");
         const patchedProject = { ...project, ...patches } as StudioProject;
-        const fullLyrics = applyConceptToLyrics(patchedProject, activeVersion.lyrics);
         const conservativeLyrics = activeVersion.lyrics;
 
         const analyzeCandidate = async (lyrics: typeof fullLyrics) => {
@@ -184,6 +222,7 @@ export function OptimizeShipModal({ project, onClose, onChanged }: OptimizeShipM
           musicArrangement: patches.musicArrangement,
         };
         if (patches.moodTags) commitPatch.moodTags = patches.moodTags;
+        if (patches.bpmTarget) commitPatch.bpmTarget = patches.bpmTarget;
         const savedProject = commandUpdateProject(project.id, commitPatch as never);
         const savedLyrics = commandSaveLyrics(project.id, activeVersion.id, bestLyrics);
         const savedAnalysis = commandSaveAnalysis(project.id, activeVersion.id, bestAnalysis);

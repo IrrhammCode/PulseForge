@@ -1,0 +1,112 @@
+Optimize & Ship menyatukan partner API hackathon, engine scoring PulseForge, dan (opsional) AI rewrite. Ringkasannya:
+
+Partner API (Musixmatch, Cyanite, Songstats)
+Musixmatch Pro
+Surface	Dipakai untuk
+Track Search
+Match judul/artist ke catalog
+Analysis API
+Moods, themes, meaning, rating → creative brief, mood/genre tags
+Richsync
+Hook timing → arrangement (intro tease, hook window)
+Catalog benchmark
+Bandingkan hook vs track serupa → lyric coach
+Lyrics coach
+Saran rewrite per section (hook align, theme quote, rating vs explicit)
+Stem Musixmatch tidak dipanggil saat Optimize & Ship — hanya stem engine di-set ke "musixmatch" untuk langkah Produce berikutnya.
+
+Cyanite
+Signal	Dipakai untuk
+BPM
+bpmTarget project
+Mood / genre / movement tags
+Backing chorus, inline cues
+Instrument tags
+Daftar instrumen arrangement
+Energy / caption
+Vocal character & production mood
+Tanpa key Cyanite: fallback dari waveform lokal (BPM estimasi + energy proxy).
+
+Songstats
+Signal	Dipakai untuk
+Velocity score
+Skala marketing budget (Launch What-If)
+Editorial playlists
+Naikkan playlist pitch count
+TikTok creates / Shazams
+Naikkan TikTok seed posts
+Historic velocity
+Saran Friday release
+Artist momentum
+Catatan tier momentum artist
+AI rewrite (opsional, server-side)
+Lewat endpoint /api/studio/lyrics/coach-fix → runIntelligentOptimize:
+
+Backend	Fungsi
+B.AI (minimax-m3)
+Rewrite lirik per section sesuai production intent
+Groq
+Fallback kalau B.AI tidak ada
+n8n
+Fallback webhook (kalau dikonfigurasi)
+Prompt AI sudah include context Musixmatch + Cyanite + catalog benchmark + viral gaps.
+
+Intelligence tier: local → partner → ai (tergantung key & hasil).
+
+Engine lokal PulseForge (selalu jalan)
+Modul	Fungsi
+Studio Analyze (/api/studio/analyze)
+Hit potential, hook strength, lyric virality, recommendations
+Viral gap engine
+Scan gap (hook, intro, stems, BPM, danceability, dll.)
+Gap fix pipeline
+Perbaikan lirik & arrangement rule-based
+Arrangement-aligned optimize
+Selaraskan lirik ↔ production per section
+Score-guarded fixes
+Tolak edit lirik yang turunkan skor
+Rewrite coach
+Saran lokal (shorten hook, repeat, explicit)
+Score gate
+Before/after: pass jika hit +3 atau hook +5
+Marketing playbook
+Rekomendasi → Launch plan notes & What-If
+Timeline seed
+NLE timeline dari hasil optimize
+Trend feed
+Trend keywords (env TREND_FEED_URL, opsional)
+Release history
+Riwayat rilis artist dari project lokal
+Alur integrasi (2 API call utama)
+
+
+1. Analyze baseline
+2. Coach-fix server
+3. Sandbox
+4. Commit
+Musixmatch
+Cyanite
+Songstats
+Scoring engine
+Trend feed
+Musixmatch coach
+Cyanite patches
+Songstats launch
+Gap fixes local
+B.AI / Groq optional
+Re-analyze draft
+Score gate
+Lyrics + brief
+Arrangement
+Launch plan
+Analysis + timeline
+Yang tidak diintegrasikan di Optimize & Ship
+Partner	Catatan
+ElevenLabs
+Bukan bagian pipeline — muncul setelah optimize via "Generate Full Song"
+LALAL.AI
+Hanya di Produce (stem separation)
+JamBase
+Viral Lab / Launch, bukan Optimize & Ship
+n8n
+Hanya sebagai fallback AI rewrite, bukan release webhook
