@@ -7,10 +7,17 @@ import { studioDeepLink } from "@/lib/viral/music-timeline";
 import { cn } from "@/lib/utils";
 
 const SEVERITY_STYLES: Record<ViralGap["severity"], string> = {
-  critical: "border-warning/50 bg-warning/10 text-warning",
-  high: "border-orange-500/40 bg-orange-500/10 text-orange-300",
-  medium: "border-accent/30 bg-accent-muted text-accent-light",
-  low: "border-border bg-surface text-muted",
+  critical: "border-border bg-surface-elevated text-foreground",
+  high: "border-border bg-surface-elevated text-foreground",
+  medium: "border-border bg-surface-elevated text-foreground",
+  low: "border-border bg-surface-elevated text-foreground",
+};
+
+const SEVERITY_LABEL_STYLES: Record<ViralGap["severity"], string> = {
+  critical: "text-warning",
+  high: "text-orange-400",
+  medium: "text-accent-light",
+  low: "text-muted",
 };
 
 const CATEGORY_LABELS: Record<ViralGap["category"], string> = {
@@ -56,9 +63,16 @@ export function ViralGapPanel({ gaps, projectId }: ViralGapPanelProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     {gap.severity === "critical" && (
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <AlertTriangle
+                        className={cn("h-4 w-4 shrink-0", SEVERITY_LABEL_STYLES[gap.severity])}
+                      />
                     )}
-                    <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold uppercase tracking-wider",
+                        SEVERITY_LABEL_STYLES[gap.severity]
+                      )}
+                    >
                       {CATEGORY_LABELS[gap.category]} · {gap.severity}
                     </span>
                     <span className="rounded-md bg-background/40 px-1.5 py-0.5 text-[10px] tabular-nums">
