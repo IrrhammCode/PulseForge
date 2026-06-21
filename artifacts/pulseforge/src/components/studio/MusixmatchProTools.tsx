@@ -1305,14 +1305,14 @@ export function MusixmatchProTools({
           {/* Content for each tool (same structure as before, now reusable) */}
           {activeTool === "lyrics" && toolData && (
             <div>
-              <pre className="whitespace-pre-wrap bg-black/40 p-3 rounded max-h-80 overflow-auto text-xs">{toolData.full}</pre>
+              <pre className="whitespace-pre-wrap bg-background p-3 rounded max-h-80 overflow-auto text-xs">{toolData.full}</pre>
               {toolData.mxm && <div className="mt-2 text-[10px] text-muted">+ MXM lyrics loaded</div>}
             </div>
           )}
 
           {activeTool === "analysis" && toolData && (
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="bg-black/30 p-3 rounded space-y-2">
+              <div className="bg-background p-3 rounded space-y-2">
                 <div className="uppercase text-[10px] text-muted">Project</div>
                 <div className="font-medium">{toolData.project?.title} — {toolData.project?.artist}</div>
                 <div className="text-xs opacity-75">{toolData.project?.genre} / {toolData.project?.mood} · {toolData.project?.bpm ?? "—"} BPM</div>
@@ -1325,7 +1325,7 @@ export function MusixmatchProTools({
                   </div>
                 )}
               </div>
-              <div className="bg-black/30 p-3 rounded space-y-2">
+              <div className="bg-background p-3 rounded space-y-2">
                 <div className="uppercase text-[10px] text-muted mb-1">
                   Analysis ({toolData.source === "local" ? "local" : toolData.source === "merged" ? "project + MXM" : "MXM"})
                 </div>
@@ -1368,7 +1368,7 @@ export function MusixmatchProTools({
 
           {activeTool === "catalog" && toolData && (
             <div className="space-y-3">
-              <div className="text-xs bg-black/30 p-3 rounded">
+              <div className="text-xs bg-background p-3 rounded">
                 <div className="font-medium">{toolData.projectMeta?.title} · {toolData.projectMeta?.artistName}</div>
                 <div className="text-muted mt-1">{toolData.projectMeta?.genre} · {toolData.projectMeta?.bpmTarget ?? "—"} BPM · analysis: {toolData.analysisSource}</div>
               </div>
@@ -1377,7 +1377,7 @@ export function MusixmatchProTools({
                   <div className="text-[10px] uppercase text-muted mb-2">Similar catalog tracks (MXM analysis.search)</div>
                   <div className="grid gap-2">
                     {toolData.similar.map((hit: any) => (
-                      <div key={hit.track.id} className="text-xs rounded border border-border/60 bg-black/20 px-3 py-2">
+                      <div key={hit.track.id} className="text-xs rounded border border-border/60 bg-background px-3 py-2">
                         <div className="font-medium">{hit.track.title} — {hit.track.artist}</div>
                         <div className="text-muted mt-0.5">
                           {hit.track.genre || "—"} · rating {hit.track.rating ?? "—"}
@@ -1421,12 +1421,12 @@ export function MusixmatchProTools({
               </div>
               <div>
                 <div className="text-[10px] uppercase text-muted mb-1">Original</div>
-                <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.original}</pre>
+                <pre className="text-xs bg-background p-3 rounded max-h-40 overflow-auto">{toolData.original}</pre>
               </div>
               {toolData.translated && (
                 <div>
                   <div className="text-[10px] uppercase text-muted mb-1">{translationLanguageLabel(toolData.translatedLang || transLang)}</div>
-                  <pre className="text-xs bg-black/30 p-3 rounded max-h-40 overflow-auto">{toolData.translated}</pre>
+                  <pre className="text-xs bg-background p-3 rounded max-h-40 overflow-auto">{toolData.translated}</pre>
                 </div>
               )}
             </div>
@@ -1556,7 +1556,7 @@ export function MusixmatchProTools({
 
               {/* Scene prompts output */}
               {scenePrompts && scenePrompts.length > 0 && (
-                <div className="mt-2 mb-3 p-3 rounded bg-black/40 text-xs space-y-2 border border-border/60">
+                <div className="mt-2 mb-3 p-3 rounded bg-background text-xs space-y-2 border border-border/60">
                   <div className="font-medium text-muted">MXM Scene Prompts (copy for Runway / AI video tools)</div>
                   {scenePrompts.map((p, i) => (
                     <div key={i} className="group">
@@ -1569,7 +1569,7 @@ export function MusixmatchProTools({
                           Copy
                         </button>
                       </div>
-                      <div className="text-[11px] leading-snug bg-black/30 p-2 rounded whitespace-pre-wrap">{p}</div>
+                      <div className="text-[11px] leading-snug bg-background p-2 rounded whitespace-pre-wrap">{p}</div>
                     </div>
                   ))}
                   <div className="text-[10px] text-muted">These are derived directly from MXM moods, themes &amp; meaning. Great starting point for external generative tools.</div>
@@ -1604,7 +1604,7 @@ export function MusixmatchProTools({
                 {!isVideoGenerating && !videoPreviewReady && (
                   <div 
                     onClick={() => void handlePreviewClick()} 
-                    className="cursor-pointer rounded border border-dashed border-border/70 bg-black/60 hover:bg-black/40 flex flex-col items-center justify-center text-center p-10"
+                    className="cursor-pointer rounded border border-dashed border-border/70 bg-background hover:bg-surface-elevated flex flex-col items-center justify-center text-center p-10"
                     style={{ minHeight: 220 }}
                   >
                     <Video className="h-8 w-8 mb-2 text-muted" />

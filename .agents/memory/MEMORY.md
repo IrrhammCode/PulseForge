@@ -1,1 +1,2 @@
 - [Vercel/Next → Vite port gotchas](vercel-vite-port.md) — process.env crashes browser (fix: vite define), verify named exports via tsc, hooks-after-early-return only fail at runtime.
+- [PulseForge theme system](pulseforge-theme-system.md) — whole-app look is token-driven in one CSS file; retheme there, not in components; some dark media surfaces stay dark on purpose.

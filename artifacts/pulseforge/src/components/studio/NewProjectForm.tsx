@@ -154,13 +154,13 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
 
             <div className="mb-3">
               <div className="text-xs font-medium uppercase text-muted mb-1">Lyrics (filled by AI — must match your nuansa!)</div>
-              <pre className="text-xs bg-black/30 p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap">{composeLyricsBody(aiGenerated.lyrics) || "(empty)"}</pre>
+              <pre className="text-xs bg-background p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap">{composeLyricsBody(aiGenerated.lyrics) || "(empty)"}</pre>
               <div className="text-[10px] text-muted mt-1">If this looks wrong (e.g. New York lyrics for a bayou prompt), click Regenerate.</div>
             </div>
 
             <div className="mb-3">
               <div className="text-xs font-medium uppercase text-muted mb-1">Creative Brief (filled)</div>
-              <div className="text-xs bg-black/30 p-2 rounded">{aiGenerated.creativeBrief?.story || '...'}</div>
+              <div className="text-xs bg-background p-2 rounded">{aiGenerated.creativeBrief?.story || '...'}</div>
             </div>
 
             <div className="flex gap-3 mt-4">
