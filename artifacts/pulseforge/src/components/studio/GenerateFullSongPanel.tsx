@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import {
   fetchCapabilities,
+  fetchMusicQuota,
   fetchRichsync,
   generateFullSong,
   separateStemsWithElevenMusic,
   separateStemsWithLalal,
   separateStemsWithMusixmatch,
   ApiError,
+  type MusicQuota,
 } from "@/lib/api-client";
 import {
   formatDuration,
@@ -57,6 +59,16 @@ interface GenerateFullSongPanelProps {
   ) => void;
 }
 
+function formatResetIn(resetAt: number | null): string {
+  if (!resetAt) return "";
+  const ms = resetAt - Date.now();
+  if (ms <= 0) return "soon";
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.round((ms % 3_600_000) / 60_000);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 function safeFileName(title: string, versionLabel: string): string {
   const base = `${title}-${versionLabel}`
     .replace(/[^\w\s-]/g, "")
@@ -92,6 +104,7 @@ export function GenerateFullSongPanel({
     durationSec: number;
     sizeBytes: number;
   } | null>(null);
+  const [quota, setQuota] = useState<MusicQuota | null>(null);
   const pendingEdits = useRef<TimelineEdits | null>(null);
   const versionIdRef = useRef(activeVersion.id);
 
@@ -100,6 +113,16 @@ export function GenerateFullSongPanel({
       .then((c) => setElevenMusicEnabled(c.features.elevenMusic))
       .catch(() => setElevenMusicEnabled(false));
   }, []);
+
+  const refreshQuota = useCallback(() => {
+    fetchMusicQuota()
+      .then(setQuota)
+      .catch(() => setQuota(null));
+  }, []);
+
+  useEffect(() => {
+    refreshQuota();
+  }, [refreshQuota]);
 
   const revokeSongUrl = useCallback(() => {
     setSongUrl((prev) => {
@@ -211,6 +234,7 @@ export function GenerateFullSongPanel({
 
       await setBlobPreview(blob, false);
       setGeneratePhase("ready");
+      refreshQuota();
 
       const baseEdits = activeVersion.timelineEdits ?? {
         sections: [],
@@ -224,11 +248,24 @@ export function GenerateFullSongPanel({
       };
     } catch (err) {
       setGeneratePhase("error");
-      setGenerateError(
-        err instanceof ApiError
-          ? err.message
-          : "Failed to generate song. Check ElevenLabs key and lyrics."
-      );
+      if (err instanceof ApiError && err.status === 429) {
+        if (err.hint) {
+          try {
+            setQuota(JSON.parse(err.hint) as MusicQuota);
+          } catch {
+            refreshQuota();
+          }
+        } else {
+          refreshQuota();
+        }
+        setGenerateError(err.message);
+      } else {
+        setGenerateError(
+          err instanceof ApiError
+            ? err.message
+            : "Failed to generate song. Check ElevenLabs key and lyrics."
+        );
+      }
     }
   };
 
@@ -379,6 +416,7 @@ export function GenerateFullSongPanel({
   const isSaving = savePhase === "processing" || savePhase === "stems" || savePhase === "timeline";
   const hasPreview = Boolean(songUrl && generatedBlob);
   const lyricsReady = hasLyricsContent(lyrics);
+  const quotaExhausted = quota ? quota.remaining <= 0 : false;
 
   const saveLabel =
     savePhase === "processing"
@@ -410,6 +448,11 @@ export function GenerateFullSongPanel({
               Set <code>ELEVENLABS_API_KEY</code> in backend to enable generation.
             </p>
           )}
+          {quota && !quotaExhausted && (
+            <p className="mt-2 text-xs text-muted">
+              {quota.remaining} of {quota.limit} song generations left in the next 24 hours.
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {onFillExample && !lyricsReady && (
@@ -418,7 +461,7 @@ export function GenerateFullSongPanel({
           <button
           type="button"
           onClick={() => void handleGenerate()}
-          disabled={isGenerating || isSaving || !lyricsReady || !elevenMusicEnabled}
+          disabled={isGenerating || isSaving || !lyricsReady || !elevenMusicEnabled || quotaExhausted}
           className="btn-primary text-sm"
         >
           {isGenerating ? (
@@ -444,7 +487,20 @@ export function GenerateFullSongPanel({
         </p>
       )}
 
-      {generateError && (
+      {quotaExhausted && quota && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <strong>Generation limit reached.</strong> You can generate {quota.limit} songs per 24
+            hours.{" "}
+            {quota.resetAt
+              ? `You can generate again in about ${formatResetIn(quota.resetAt)}.`
+              : "Please try again later."}
+          </span>
+        </div>
+      )}
+
+      {generateError && !quotaExhausted && (
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {generateError}

@@ -259,6 +259,25 @@ export interface FullSongOptions {
  * Generate a complete studio song (singing vocals + full instrumentation) using ElevenLabs Music API.
  * Pass a rich prompt that includes the full lyrics + style/genre/mood descriptors.
  */
+export interface MusicQuota {
+  limit: number;
+  used: number;
+  remaining: number;
+  windowMs: number;
+  resetAt: number | null;
+  retryAfterMs: number | null;
+}
+
+/** Current full-song generation quota for this client (does not consume a slot). */
+export async function fetchMusicQuota(): Promise<MusicQuota> {
+  const res = await fetch("/api/studio/music/quota");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError((data as { error?: string }).error ?? "Failed to load quota", res.status);
+  }
+  return data as MusicQuota;
+}
+
 export async function generateFullSong(
   prompt: string,
   options: FullSongOptions = {}
@@ -270,7 +289,10 @@ export async function generateFullSong(
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError((data as { error?: string }).error ?? "Full song generation failed", res.status);
+    const message = (data as { error?: string }).error ?? "Full song generation failed";
+    const quota =
+      typeof (data as MusicQuota).remaining === "number" ? (data as MusicQuota) : undefined;
+    throw new ApiError(message, res.status, quota ? JSON.stringify(quota) : undefined);
   }
   return res.blob();
 }

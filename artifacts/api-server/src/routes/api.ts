@@ -1,5 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
+import {
+  clientKey,
+  tryConsume,
+  releaseReservation,
+  peekRateLimit,
+  type RateLimitStatus,
+} from "../lib/rate-limit.js";
 import { getSystemCapabilities } from "@pulseforge/shared/lib/partners/capabilities";
 import {
   getTrackDetails,
@@ -41,6 +48,9 @@ import type { LyricsSections, StudioProject } from "@pulseforge/shared/types/stu
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
 export const apiRouter = Router();
+
+// Max number of full-song generations allowed per client within a rolling 24h window.
+const MUSIC_GENERATION_LIMIT = 2;
 
 apiRouter.get("/capabilities", (_req, res) => {
   res.json(getSystemCapabilities());
@@ -573,9 +583,39 @@ apiRouter.post("/studio/tts", async (req, res) => {
 });
 
 // Full song generation using ElevenLabs Music (not TTS). Supports custom lyrics + style via prompt.
+function applyRateLimitHeaders(res: import("express").Response, status: RateLimitStatus) {
+  res.setHeader("X-RateLimit-Limit", String(status.limit));
+  res.setHeader("X-RateLimit-Remaining", String(status.remaining));
+  if (status.resetAt) res.setHeader("X-RateLimit-Reset", String(status.resetAt));
+  if (status.retryAfterMs != null) {
+    res.setHeader("Retry-After", String(Math.ceil(status.retryAfterMs / 1000)));
+  }
+}
+
+// Current music-generation quota for this client (does not consume a slot).
+apiRouter.get("/studio/music/quota", (req, res) => {
+  const status = peekRateLimit(clientKey(req), MUSIC_GENERATION_LIMIT);
+  applyRateLimitHeaders(res, status);
+  res.json(status);
+});
+
 apiRouter.post("/studio/music", async (req, res) => {
+  const key = clientKey(req);
+  // Atomically reserve a slot up-front so concurrent requests can't overrun the limit,
+  // and so the limit is enforced before we ever call the (paid) ElevenLabs API.
+  const reservation = tryConsume(key, MUSIC_GENERATION_LIMIT);
+  if (!reservation.allowed) {
+    applyRateLimitHeaders(res, reservation.status);
+    res.status(429).json({
+      error: `Generation limit reached — you can generate ${MUSIC_GENERATION_LIMIT} songs per 24 hours. Please try again later.`,
+      ...reservation.status,
+    });
+    return;
+  }
+
   try {
     if (!hasElevenLabsKey()) {
+      releaseReservation(key, reservation.token);
       res.status(503).json({ error: "ELEVENLABS_API_KEY is not configured" });
       return;
     }
@@ -590,6 +630,7 @@ apiRouter.post("/studio/music", async (req, res) => {
 
     const prompt = body.prompt?.trim() ?? "";
     if (!prompt && !body.compositionPlan) {
+      releaseReservation(key, reservation.token);
       res.status(400).json({ error: "Prompt or composition plan is required for full song generation" });
       return;
     }
@@ -601,12 +642,17 @@ apiRouter.post("/studio/music", async (req, res) => {
       compositionPlan: body.compositionPlan,
     });
 
+    // Reservation stands — this was a successful generation.
+    applyRateLimitHeaders(res, reservation.status);
+
     res.setHeader("Content-Type", result.mimeType);
     if (result.songId) {
       res.setHeader("X-Song-Id", result.songId);
     }
     res.send(Buffer.from(result.audio));
   } catch (err) {
+    // Generation failed — roll back the reserved slot so it doesn't burn quota.
+    releaseReservation(key, reservation.token);
     res.status(500).json({ error: err instanceof Error ? err.message : "Music generation failed" });
   }
 });

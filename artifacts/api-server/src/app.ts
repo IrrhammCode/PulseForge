@@ -9,6 +9,9 @@ import { getHealthStatus } from "./lib/health.js";
 export function createApp() {
   const app = express();
 
+  // Behind Replit's proxy — trust X-Forwarded-For so req.ip / rate limiting see the real client.
+  app.set("trust proxy", true);
+
   app.use(
     cors({
       origin: true,

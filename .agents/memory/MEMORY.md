@@ -3,3 +3,4 @@
 - [Viral proxy payload bloat](viral-proxy-payload-bloat.md) — large frontend POSTs (allProjects w/ audio) stall through the proxy though backend is fast; slim payloads + abort-timeout.
 - [Missing ported API routes](missing-ported-api-routes.md) — AI/partner feature "produces nothing" usually = frontend calls a route the port never added to api.ts (404); studio/generate added, others still missing.
 - [PulseForge studio sync/translation/preview](pulseforge-studio-sync.md) — MXM catalog data is a different track; translate actual project lyrics; guard preview audio with a generation token.
+- [Paid generation rate limit](paid-generation-rate-limit.md) — ElevenLabs music throttled per-IP/24h; reserve-before-generate + rollback; in-memory/per-instance is an intentional local-first tradeoff.
