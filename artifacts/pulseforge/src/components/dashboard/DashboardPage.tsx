@@ -23,9 +23,10 @@ import {
 import { getViralLabLink } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { getRecentActivities, type ActivityItem } from "@/lib/activity";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { fetchCapabilities } from "@/lib/api-client";
 import type { SystemCapabilities } from "@/lib/partners/capabilities";
+import { SectionHead } from "@/components/ui/editorial";
 
 const PIPELINE_STEPS = [
   { key: "write" as const, label: "Write", icon: PenLine },
@@ -34,28 +35,6 @@ const PIPELINE_STEPS = [
   { key: "viral" as const, label: "Viral Lab", icon: Flame },
   { key: "launch" as const, label: "Launch", icon: Rocket },
 ];
-
-function SectionHead({
-  title,
-  eyebrow,
-  action,
-}: {
-  title: string;
-  eyebrow?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="mb-5 flex items-end justify-between gap-4 border-t-2 border-foreground pt-4">
-      <div>
-        {eyebrow && <p className="landing-eyebrow">{eyebrow}</p>}
-        <h2 className="font-display mt-1 text-2xl uppercase leading-none tracking-tight md:text-3xl">
-          {title}
-        </h2>
-      </div>
-      {action}
-    </div>
-  );
-}
 
 export function DashboardPage() {
   const { projects, ready, create, remove } = useStudioProjects();

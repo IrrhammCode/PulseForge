@@ -6,6 +6,7 @@ import { useStudioProjects } from "@/lib/hooks/useStudioProjects";
 import { ProjectCard } from "@/components/studio/ProjectCard";
 import { NewProjectForm } from "@/components/studio/NewProjectForm";
 import { FillExampleButton } from "@/components/studio/FillExampleButton";
+import { PageHeader } from "@/components/ui/editorial";
 import {
   buildExampleCreateInput,
   getStudioExamplePreset,
@@ -16,7 +17,7 @@ import type { StudioProjectStatus } from "@/types/studio";
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { projects, ready, create, remove, refresh } = useStudioProjects();
+  const { projects, ready, create, remove } = useStudioProjects();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | StudioProjectStatus>("all");
@@ -74,45 +75,35 @@ export default function ProjectsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:py-12 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-            Projects
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight md:text-4xl">
-            Your projects
-          </h1>
-          <p className="mt-1 max-w-lg text-sm text-muted md:text-base">
-            Manage your tracks in the full studio pipeline.
-          </p>
-        </div>
-        <div className="w-full md:w-auto md:max-w-md shrink-0">
-          <NewProjectForm onCreate={create} />
-        </div>
-      </div>
+      <PageHeader
+        badge="Studio"
+        title="Projects"
+        description="Manage your tracks in the full studio pipeline."
+        actions={<NewProjectForm onCreate={create} />}
+      />
 
       {/* Mini Stats Row */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4">
-          <div className="flex items-center gap-2 text-accent-light">
+      <div className="mt-8 grid grid-cols-1 border-2 border-foreground bg-surface sm:grid-cols-3">
+        <div className="border-b-2 border-foreground p-5 sm:border-b-0 sm:border-r-2">
+          <div className="flex items-center gap-2 text-muted">
             <LayoutGrid className="h-4 w-4" />
-            <span className="text-[10px] uppercase tracking-wider">Total Projects</span>
+            <span className="landing-eyebrow">Total Projects</span>
           </div>
-          <p className="mt-2 text-3xl font-bold tabular-nums">{stats.totalProjects}</p>
+          <p className="mt-2 font-display text-4xl leading-none tabular-nums">{stats.totalProjects}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4">
-          <div className="flex items-center gap-2 text-accent-light">
+        <div className="border-b-2 border-foreground p-5 sm:border-b-0 sm:border-r-2">
+          <div className="flex items-center gap-2 text-muted">
             <BarChart3 className="h-4 w-4" />
-            <span className="text-[10px] uppercase tracking-wider">Analyzed</span>
+            <span className="landing-eyebrow">Analyzed</span>
           </div>
-          <p className="mt-2 text-3xl font-bold tabular-nums">{stats.analyzedProjects}</p>
+          <p className="mt-2 font-display text-4xl leading-none tabular-nums">{stats.analyzedProjects}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-surface-elevated p-4">
-          <div className="flex items-center gap-2 text-accent-light">
+        <div className="p-5">
+          <div className="flex items-center gap-2 text-muted">
             <BarChart3 className="h-4 w-4" />
-            <span className="text-[10px] uppercase tracking-wider">Avg Hit Score</span>
+            <span className="landing-eyebrow">Avg Hit Score</span>
           </div>
-          <p className="mt-2 text-3xl font-bold tabular-nums">
+          <p className="mt-2 font-display text-4xl leading-none tabular-nums">
             {stats.avgHitScore != null ? stats.avgHitScore : "N/A"}
           </p>
         </div>
@@ -120,7 +111,7 @@ export default function ProjectsPage() {
 
       {/* Toolbar: Search + Filter + Sort (shown only when projects exist) */}
       {ready && projects.length > 0 && (
-        <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-border bg-surface-elevated p-4 sm:flex-row sm:items-center">
+        <div className="mt-8 flex flex-col gap-3 border-2 border-foreground bg-surface p-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
             <input
@@ -128,7 +119,7 @@ export default function ProjectsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by title or artist..."
-              className="w-full rounded-xl border border-border bg-surface pl-9 py-2 text-sm placeholder:text-muted focus:border-accent focus:outline-none"
+              className="w-full border-2 border-foreground bg-surface pl-9 py-2 text-sm placeholder:text-muted outline-none focus:bg-foreground/5"
             />
           </div>
 
@@ -136,7 +127,7 @@ export default function ProjectsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as "all" | StudioProjectStatus)}
-              className="rounded-xl border border-border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              className="border-2 border-foreground bg-surface px-3 py-2 text-sm outline-none focus:bg-foreground/5"
             >
               <option value="all">All status</option>
               <option value="draft">Draft</option>
@@ -148,7 +139,7 @@ export default function ProjectsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "updated" | "name" | "score")}
-              className="rounded-xl border border-border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              className="border-2 border-foreground bg-surface px-3 py-2 text-sm outline-none focus:bg-foreground/5"
             >
               <option value="updated">Last updated</option>
               <option value="name">Name A-Z</option>
@@ -162,7 +153,7 @@ export default function ProjectsPage() {
       {!ready && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-2xl bg-border/50" />
+            <div key={i} className="h-48 animate-pulse border-2 border-foreground bg-foreground/5" />
           ))}
         </div>
       )}
@@ -173,10 +164,10 @@ export default function ProjectsPage() {
         <div className="mt-10">
           {/* Centered hero message */}
           <div className="mx-auto mb-8 max-w-md text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-muted">
-              <Plus className="h-6 w-6 text-accent-light" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border-2 border-foreground bg-surface">
+              <Plus className="h-6 w-6 text-foreground" />
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight">No projects yet</h2>
+            <h2 className="font-display text-3xl uppercase leading-none tracking-tight">No projects yet</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-muted">
               Start your Music Studio OS journey. Choose how you&apos;d like to begin.
             </p>
@@ -185,7 +176,7 @@ export default function ProjectsPage() {
           {/* 2x2 balanced grid - much cleaner than 4 equal columns */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Primary: Create from Scratch */}
-            <div className="flex flex-col rounded-2xl border border-border bg-surface-elevated p-6">
+            <div className="flex flex-col border-2 border-foreground bg-surface p-6">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">Create from Scratch</h3>
                 <p className="mt-2 text-sm text-muted">
@@ -198,10 +189,10 @@ export default function ProjectsPage() {
             </div>
 
             {/* Recommended: Start from Template */}
-            <div className="flex flex-col rounded-2xl border border-accent/40 bg-accent-muted/5 p-6">
+            <div className="flex flex-col border-2 border-foreground bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Fill examples</h3>
-                <span className="rounded-full bg-accent-muted px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-accent-light">
+                <span className="bg-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
                   Ready to generate
                 </span>
               </div>
@@ -214,10 +205,10 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-border bg-surface-elevated p-6">
+            <div className="flex flex-col border-2 border-foreground bg-surface p-6">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Start from Template</h3>
-                <span className="rounded-full bg-surface px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-muted">
+                <span className="border-2 border-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground">
                   Quick
                 </span>
               </div>
@@ -228,7 +219,7 @@ export default function ProjectsPage() {
                   <button
                     key={idx}
                     onClick={() => handleCreateTemplate(tpl)}
-                    className="w-full rounded-xl border border-accent/20 bg-surface px-4 py-2.5 text-left text-sm font-medium transition hover:border-accent/50 hover:bg-accent-muted/10 active:bg-accent-muted/20"
+                    className="w-full border-2 border-foreground bg-surface px-4 py-2.5 text-left text-sm font-medium transition hover:bg-foreground hover:text-background"
                   >
                     {tpl.title} <span className="text-muted">by {tpl.artistName}</span>
                   </button>
@@ -237,7 +228,7 @@ export default function ProjectsPage() {
             </div>
 
             {/* Quick wins row */}
-            <div className="flex flex-col rounded-2xl border border-border bg-surface-elevated p-6 md:col-span-2 lg:col-span-1">
+            <div className="flex flex-col border-2 border-foreground bg-surface p-6 md:col-span-2 lg:col-span-1">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">Try with Demo Track</h3>
                 <p className="mt-2 text-sm text-muted">
@@ -246,13 +237,13 @@ export default function ProjectsPage() {
               </div>
               <Link
                 href="/analyze"
-                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent/90"
+                className="btn-primary mt-5 w-full justify-center text-sm"
               >
                 Open Quick Analyze
               </Link>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-border bg-surface-elevated p-6 md:col-span-2 lg:col-span-1">
+            <div className="flex flex-col border-2 border-foreground bg-surface p-6 md:col-span-2 lg:col-span-1">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">Import from Musixmatch</h3>
                 <p className="mt-2 text-sm text-muted">
@@ -261,7 +252,7 @@ export default function ProjectsPage() {
               </div>
               <Link
                 href="/analyze"
-                className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-elevated"
+                className="btn-secondary mt-5 w-full justify-center text-sm"
               >
                 Search &amp; Import
               </Link>
@@ -274,7 +265,7 @@ export default function ProjectsPage() {
         <>
           {/* No match message */}
           {filteredProjects.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-dashed border-border p-8 text-center">
+            <div className="mt-8 border-2 border-dashed border-foreground p-8 text-center">
               <p className="text-muted">No projects match your search or filter.</p>
             </div>
           )}
@@ -287,7 +278,6 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   onDelete={handleDelete}
-                  onRefresh={refresh}
                 />
               ))}
             </div>
@@ -296,10 +286,10 @@ export default function ProjectsPage() {
       )}
 
       {/* Quick Analyze Promo (always visible, clean card) */}
-      <div className="mt-10 rounded-2xl border border-accent/30 bg-accent-muted/5 p-6">
+      <div className="mt-10 border-2 border-foreground bg-surface p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-semibold text-accent-light">Quick Analyze</h3>
+            <h3 className="font-semibold text-foreground">Quick Analyze</h3>
             <p className="mt-1 text-sm text-muted">
               Have a released track ready? Score it instantly with full Musixmatch intelligence — no studio needed.
             </p>

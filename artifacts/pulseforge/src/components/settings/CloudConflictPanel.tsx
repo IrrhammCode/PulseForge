@@ -22,9 +22,9 @@ export function CloudConflictPanel({
   return (
     <div
       data-testid="cloud-conflict-panel"
-      className="mt-4 rounded-xl border border-warning/40 bg-warning/5 p-4"
+      className="mt-4 border-2 border-foreground bg-surface p-4"
     >
-      <p className="text-sm font-semibold text-warning">
+      <p className="text-sm font-semibold text-foreground">
         {conflicts.length} sync conflict{conflicts.length > 1 ? "s" : ""} detected
       </p>
       <p className="mt-1 text-xs text-muted">
@@ -50,7 +50,7 @@ export function CloudConflictPanel({
         {conflicts.map((c) => (
           <li
             key={c.projectId}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-xs"
+            className="border-2 border-foreground bg-surface px-3 py-2 text-xs"
           >
             <p className="font-medium">{c.title}</p>
             <p className="mt-1 text-muted">
@@ -64,7 +64,7 @@ export function CloudConflictPanel({
                   name={`conflict-${c.projectId}`}
                   checked={(resolutions[c.projectId] ?? "local") === "local"}
                   onChange={() => onChange(c.projectId, "local")}
-                  className="accent-accent"
+                  className="accent-foreground"
                 />
                 Keep local
               </label>
@@ -74,7 +74,7 @@ export function CloudConflictPanel({
                   name={`conflict-${c.projectId}`}
                   checked={resolutions[c.projectId] === "cloud"}
                   onChange={() => onChange(c.projectId, "cloud")}
-                  className="accent-accent"
+                  className="accent-foreground"
                 />
                 Keep cloud
               </label>

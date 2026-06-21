@@ -38,3 +38,15 @@ on components (`bg-gradient-to-*`, `shadow-*`) — grep for them after any visua
 A pure token swap changes COLOR only. If the user says "the layout didn't change",
 restructure components: section headers (`SectionShell`), hero composition, stat band,
 card framing — not just tokens.
+
+## Shared editorial primitives (reuse these, don't re-invent)
+`artifacts/pulseforge/src/components/ui/editorial.tsx` exports `PageHeader`,
+`SectionHead`, and `Panel` — the canonical building blocks for the bold-monochrome
+editorial look (eyebrow + Anton uppercase title, 2px top/bottom rules, flat
+`border-2 border-foreground bg-surface` blocks). Dashboard, Studio/Projects, Quick
+Analyze, Viral Lab, Integrations, Settings, and Help all use them.
+**Why:** keeps every page cohesive and makes future restyles a matter of composing
+primitives instead of hand-rolling headers (which caused drift before).
+**How to apply:** when adding/restyling a page, import these instead of writing new
+`text-xs uppercase` eyebrows or rounded cards; flatten inputs to
+`border-2 border-foreground bg-surface ... focus:bg-foreground/5` (no rounding/accent).

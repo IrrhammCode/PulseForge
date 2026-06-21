@@ -4,7 +4,7 @@ import { useSearchParams } from "@/lib/navigation-compat";
 import { Link } from "wouter";
 import { AlertCircle, Flame, Loader2 } from "lucide-react";
 import { LandingContainer } from "@/components/landing/LandingContainer";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PageHeader, SectionHead } from "@/components/ui/editorial";
 import { getRecentActivities } from "@/lib/activity";
 import { ListenerSimulation } from "@/components/analysis/ListenerSimulation";
 import { HitPotentialPanel } from "@/components/analysis/HitPotentialPanel";
@@ -654,17 +654,11 @@ function ViralLabPageInner() {
 
   return (
     <LandingContainer className="py-10 md:py-14">
-      <div className="flex items-center gap-2">
-        <Flame className="h-5 w-5 text-accent-light" />
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-          Viral intelligence
-        </p>
-      </div>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Viral Lab</h1>
-      <p className="mt-3 max-w-2xl text-sm text-muted md:text-base">
-        Simulate 1 million people listening to your track, viral gap analysis, and a music
-        timeline editor (NLE-style). Works with Studio projects or standalone demo tracks from Quick Analyze.
-      </p>
+      <PageHeader
+        badge="Viral Lab"
+        title="Viral Lab"
+        description="Simulate 1 million people listening to your track, viral gap analysis, and a music timeline editor (NLE-style). Works with Studio projects or standalone demo tracks from Quick Analyze."
+      />
 
       <div className="mt-8 space-y-6">
         {ready && (
@@ -689,7 +683,7 @@ function ViralLabPageInner() {
                 const acts = getRecentActivities(4).filter(a => a.type === "viral_run" || a.type === "analyze_complete");
                 if (acts.length === 0) {
                   return (
-                    <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">
+                    <div className="border-2 border-dashed border-foreground bg-surface p-4 text-sm text-muted">
                       Run a simulation (or Quick Analyze then handoff) — recent runs appear here.
                     </div>
                   );
@@ -697,7 +691,7 @@ function ViralLabPageInner() {
                 return (
                   <div className="space-y-1.5">
                     {acts.map((a) => (
-                      <Link key={a.id} href={a.link || "/viral"} className="flex justify-between rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-sm hover:border-accent/30">
+                      <Link key={a.id} href={a.link || "/viral"} className="flex justify-between border-2 border-foreground bg-surface px-3 py-1.5 text-sm transition hover:bg-foreground hover:text-background">
                         <span>{a.title}</span>
                         <span className="text-xs text-muted tabular-nums">{a.score != null ? `${a.score} • ` : ""}{new Date(a.at).toLocaleDateString([], {month:"short", day:"numeric"})}</span>
                       </Link>
@@ -710,7 +704,7 @@ function ViralLabPageInner() {
         )}
 
         {selectedId === "demo-blinding-lights" && (
-          <div className="text-xs text-muted bg-surface-elevated px-3 py-1.5 rounded">
+          <div className="border-2 border-foreground bg-surface px-3 py-1.5 text-xs text-muted">
             Demo mode – Blinding Lights by The Weeknd. Not saved to any Studio project. Uses the exact same simulation & gap engine as real projects.
           </div>
         )}
@@ -729,7 +723,7 @@ function ViralLabPageInner() {
             type="button"
             onClick={() => void runAnalysis()}
             disabled={!selectedId || loading}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-accent px-6 py-3 text-base font-semibold text-white transition hover:bg-accent-light disabled:opacity-50 shadow-sm"
+            className="btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-base disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -747,7 +741,7 @@ function ViralLabPageInner() {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
+          <div className="flex items-start gap-2 border-2 border-foreground bg-surface p-4 text-sm text-foreground">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             {error}
           </div>
@@ -755,7 +749,7 @@ function ViralLabPageInner() {
 
         {loading && !result && (
           <div className="flex items-center justify-center gap-2 py-20 text-muted">
-            <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <Loader2 className="h-6 w-6 animate-spin text-foreground" />
             <span className="text-sm">Sampling 2,400 personas → scale 1M…</span>
           </div>
         )}
@@ -764,19 +758,23 @@ function ViralLabPageInner() {
           <div className="space-y-8">
             <ViralSummaryHero data={result} />
 
-            <SectionHeader
-              title="Crowd & retention"
-              subtitle="How 1M listeners react — skip, save, share"
-            />
+            <div>
+              <SectionHead title="Crowd & retention" className="mb-2" />
+              <p className="max-w-2xl text-sm text-muted">
+                How 1M listeners react — skip, save, share
+              </p>
+            </div>
             <div className="grid gap-6 lg:grid-cols-2">
               <CrowdSimulationPanel data={result.crowd} animate={!loading} />
               <ListenerSimulation data={result.monteCarlo} />
             </div>
 
-            <SectionHeader
-              title="Music Timeline Editor — Full Production NLE"
-              subtitle="Drag clips to move • resize edges • split • per-lane volume + mute/solo • Play real multi-stem mix • Undo/Redo • Apply & re-simulate instantly"
-            />
+            <div>
+              <SectionHead title="Music Timeline Editor — Full Production NLE" className="mb-2" />
+              <p className="max-w-2xl text-sm text-muted">
+                Drag clips to move • resize edges • split • per-lane volume + mute/solo • Play real multi-stem mix • Undo/Redo • Apply &amp; re-simulate instantly
+              </p>
+            </div>
             <MusicTimelineEditor
               timeline={result.timeline}
               projectId={result.projectId}
@@ -827,16 +825,20 @@ function ViralLabPageInner() {
               onBounceArrangement={() => console.log('Bounce only in Studio Produce context')}
             />
 
-            <SectionHeader
-              title="Gap analysis"
-              subtitle="What's missing across every lane — lyrics, hook, production, distribution"
-            />
+            <div>
+              <SectionHead title="Gap analysis" className="mb-2" />
+              <p className="max-w-2xl text-sm text-muted">
+                What&apos;s missing across every lane — lyrics, hook, production, distribution
+              </p>
+            </div>
             <ViralGapPanel gaps={result.gaps} projectId={result.projectId} />
 
-            <SectionHeader
-              title="Hit potential & what-if"
-              subtitle="Tune launch params — directly affects the simulation"
-            />
+            <div>
+              <SectionHead title="Hit potential & what-if" className="mb-2" />
+              <p className="max-w-2xl text-sm text-muted">
+                Tune launch params — directly affects the simulation
+              </p>
+            </div>
             <div className="grid gap-6 lg:grid-cols-2">
               <HitPotentialPanel data={result.trackAnalysis.hitPotential} />
               <WhatIfSimulator
@@ -858,7 +860,7 @@ export function ViralLabPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24 text-muted">
-          <Loader2 className="h-6 w-6 animate-spin text-accent" />
+          <Loader2 className="h-6 w-6 animate-spin text-foreground" />
         </div>
       }
     >

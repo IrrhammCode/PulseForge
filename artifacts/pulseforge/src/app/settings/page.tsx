@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Download, RefreshCw, Trash2, Upload } from "lucide-react";
+import { PageHeader, Panel } from "@/components/ui/editorial";
 import { CloudConflictPanel } from "@/components/settings/CloudConflictPanel";
 import { resetOnboarding } from "@/lib/onboarding";
 import { useStudioProjects } from "@/lib/hooks/useStudioProjects";
@@ -220,17 +221,14 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-        Preferences
-      </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight">Settings</h1>
-      <p className="mt-2 text-sm text-muted">
-        Local storage and cloud sync preferences. Projects stay in this browser; optional
-        backend mirror uses session or admin tokens.
-      </p>
+      <PageHeader
+        badge="Preferences"
+        title="Settings"
+        description="Local storage and cloud sync preferences. Projects stay in this browser; optional backend mirror uses session or admin tokens."
+      />
 
       <div className="mt-8 space-y-4">
-        <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+        <Panel>
           <h2 className="font-semibold">Backup & restore</h2>
           <p className="mt-2 text-sm text-muted">
             Export project metadata as JSON. Use full backup to include IndexedDB audio blobs
@@ -273,9 +271,9 @@ export default function SettingsPage() {
           {importStatus && (
             <p className="mt-3 text-sm text-muted">{importStatus}</p>
           )}
-        </div>
+        </Panel>
 
-        <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+        <Panel>
           <h2 className="font-semibold">Cloud sync (optional)</h2>
           <p className="mt-2 text-sm text-muted">
             Mirror projects and IndexedDB audio to the backend SQLite store. Create a personal
@@ -285,7 +283,7 @@ export default function SettingsPage() {
           </p>
 
           {sessionInfo && (
-            <p className="mt-3 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted">
+            <p className="mt-3 border-2 border-foreground bg-surface px-3 py-2 text-xs text-muted">
               Signed in as{" "}
               <span className="font-medium text-foreground">
                 {sessionInfo.label ?? sessionInfo.kind}
@@ -302,7 +300,7 @@ export default function SettingsPage() {
               value={sessionLabel}
               onChange={(e) => setSessionLabel(e.target.value)}
               placeholder="Session label (e.g. MacBook)"
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent/40"
+              className="w-full border-2 border-foreground bg-surface px-3 py-2 text-sm outline-none focus:bg-foreground/5"
             />
             <button
               type="button"
@@ -319,7 +317,7 @@ export default function SettingsPage() {
             value={syncToken}
             onChange={(e) => setSyncToken(e.target.value)}
             placeholder="Bearer token (session or bootstrap admin)"
-            className="mt-3 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent/40"
+            className="mt-3 w-full border-2 border-foreground bg-surface px-3 py-2 text-sm outline-none focus:bg-foreground/5"
           />
           <label className="mt-3 flex cursor-pointer items-center gap-3 text-sm">
             <input
@@ -329,7 +327,7 @@ export default function SettingsPage() {
                 setAutoCloudPush(e.target.checked);
                 setAutoCloudPushEnabled(e.target.checked);
               }}
-              className="h-4 w-4 rounded border-border accent-accent"
+              className="h-4 w-4 border-2 border-foreground accent-foreground"
             />
             Auto-push projects to cloud on save (debounced, requires token)
           </label>
@@ -343,7 +341,7 @@ export default function SettingsPage() {
                   setCloudSyncMode("merge");
                   clearPullConflicts();
                 }}
-                className="accent-accent"
+                className="accent-foreground"
               />
               Merge (keep local projects not in cloud)
             </label>
@@ -356,7 +354,7 @@ export default function SettingsPage() {
                   setCloudSyncMode("replace");
                   clearPullConflicts();
                 }}
-                className="accent-accent"
+                className="accent-foreground"
               />
               Replace (cloud overwrites all local)
             </label>
@@ -429,9 +427,9 @@ export default function SettingsPage() {
             )}
           </div>
           {syncStatus && <p className="mt-3 text-sm text-muted">{syncStatus}</p>}
-        </div>
+        </Panel>
 
-        <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+        <Panel>
           <h2 className="font-semibold">Viral Lab</h2>
           <p className="mt-2 text-sm text-muted">
             Automatically re-run Viral Lab when lyrics or audio change and a prior snapshot
@@ -445,13 +443,13 @@ export default function SettingsPage() {
                 setAutoReviral(e.target.checked);
                 setAutoReviralEnabled(e.target.checked);
               }}
-              className="h-4 w-4 rounded border-border accent-accent"
+              className="h-4 w-4 border-2 border-foreground accent-foreground"
             />
             Auto re-viral on stale content
           </label>
-        </div>
+        </Panel>
 
-        <div className="rounded-2xl border border-border bg-surface-elevated p-5">
+        <Panel>
           <h2 className="font-semibold">Onboarding</h2>
           <p className="mt-2 text-sm text-muted">
             Require the Home landing page before Dashboard, Studio, and other app routes.
@@ -464,13 +462,13 @@ export default function SettingsPage() {
             <RefreshCw className="h-4 w-4" />
             Reset welcome tour
           </button>
-        </div>
+        </Panel>
 
-        <div className="rounded-2xl border border-danger/30 bg-danger/5 p-5">
+        <Panel>
           <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
             <div>
-              <h2 className="font-semibold text-danger">Danger zone</h2>
+              <h2 className="font-semibold">Danger zone</h2>
               <p className="mt-2 text-sm text-muted">
                 {projectCount} project{projectCount !== 1 ? "s" : ""} stored locally.
                 Clearing removes all project metadata and IndexedDB audio.
@@ -479,14 +477,14 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleClearAll}
                 disabled={projectCount === 0}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-danger/40 px-4 py-2 text-sm font-medium text-danger transition hover:bg-danger/10 disabled:opacity-40"
+                className="mt-4 inline-flex items-center gap-2 border-2 border-foreground px-4 py-2 text-sm font-medium text-foreground transition hover:bg-foreground hover:text-background disabled:opacity-40"
               >
                 <Trash2 className="h-4 w-4" />
                 Clear all projects & audio
               </button>
             </div>
           </div>
-        </div>
+        </Panel>
       </div>
     </div>
   );

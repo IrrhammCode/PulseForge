@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { ArrowRight, BarChart3, Flame, GitCompare, Music2, PenLine, Rocket } from "lucide-react";
 import { STUDIO_TABS } from "@/types/studio";
 import { LandingContainer } from "@/components/landing/LandingContainer";
+import { PageHeader, SectionHead, Panel } from "@/components/ui/editorial";
 
 const TAB_ICONS = {
   write: PenLine,
@@ -53,42 +54,37 @@ const WORKFLOW = [
 export default function HelpPage() {
   return (
     <LandingContainer className="py-10 md:py-14">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-        Guide
-      </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Help & workflow</h1>
-      <p className="mt-3 max-w-xl text-sm text-muted md:text-base">
-        PulseForge is a local-first studio OS. Projects save in your browser — no account needed.
-      </p>
+      <PageHeader
+        badge="Guide"
+        title="Help & Workflow"
+        description="PulseForge is a local-first studio OS. Projects save in your browser — no account needed."
+      />
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold">Studio tabs</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-12">
+        <SectionHead title="Studio tabs" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {STUDIO_TABS.map((tab) => {
             const Icon = TAB_ICONS[tab.id];
             return (
-              <div
-                key={tab.id}
-                className="rounded-2xl border border-border bg-surface-elevated p-4"
-              >
-                <Icon className="h-5 w-5 text-accent-light" />
+              <Panel key={tab.id} className="p-4">
+                <Icon className="h-5 w-5 text-foreground" />
                 <p className="mt-2 font-semibold">{tab.label}</p>
                 <p className="mt-1 text-sm text-muted">{tab.description}</p>
-              </div>
+              </Panel>
             );
           })}
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold">Recommended workflow</h2>
-        <ol className="mt-4 space-y-4">
+      <section className="mt-12">
+        <SectionHead title="Recommended workflow" />
+        <ol className="space-y-3">
           {WORKFLOW.map((item) => (
             <li
               key={item.step}
-              className="flex gap-4 rounded-2xl border border-border bg-surface-elevated p-4"
+              className="flex gap-4 border-2 border-foreground bg-surface p-4"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-muted text-sm font-bold text-accent-light">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-foreground text-sm font-bold text-background">
                 {item.step}
               </span>
               <div>
@@ -104,9 +100,9 @@ export default function HelpPage() {
         </Link>
       </section>
 
-      <section className="mt-10 rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/5 to-transparent p-5">
+      <Panel className="mt-12">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-accent-light" />
+          <Flame className="h-5 w-5 text-foreground" />
           <h2 className="font-semibold">Viral Lab</h2>
         </div>
         <p className="mt-2 text-sm text-muted">
@@ -117,9 +113,9 @@ export default function HelpPage() {
           Open Viral Lab
           <ArrowRight className="h-4 w-4" />
         </Link>
-      </section>
+      </Panel>
 
-      <section className="mt-6 rounded-2xl border border-border bg-surface-elevated p-5">
+      <Panel className="mt-6">
         <h2 className="font-semibold">Quick Analyze</h2>
         <p className="mt-2 text-sm text-muted">
           Already have a released track on Musixmatch? Use Quick Analyze for full partner
@@ -128,7 +124,7 @@ export default function HelpPage() {
         <Link href="/analyze" className="btn-secondary mt-4 text-sm">
           Open Quick Analyze
         </Link>
-      </section>
+      </Panel>
     </LandingContainer>
   );
 }

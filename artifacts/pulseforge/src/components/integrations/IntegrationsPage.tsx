@@ -14,6 +14,7 @@ import {
   SongstatsLogo,
 } from "@/components/icons/BrandLogos";
 import { LandingContainer } from "@/components/landing/LandingContainer";
+import { PageHeader, SectionHead, Panel } from "@/components/ui/editorial";
 
 const PARTNER_ROWS = [
   {
@@ -100,24 +101,27 @@ export function IntegrationsPage() {
 
   return (
     <LandingContainer className="py-10 md:py-14">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-light">
-        Partner stack
-      </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Integrations</h1>
-      <p className="mt-3 max-w-2xl text-sm text-muted md:text-base">
-        Musicathon partner APIs power PulseForge end-to-end. Configure keys in{" "}
-        <code className="text-accent-light">backend/.env</code> (see{" "}
-        <code className="text-accent-light">backend/.env.example</code>). Optional:{" "}
-        <code className="text-accent-light">TREND_FEED_URL</code> for live trend keywords,{" "}
-        <code className="text-accent-light">MXM_KEY</code> as alias for Musixmatch.
-      </p>
+      <PageHeader
+        badge="Partner stack"
+        title="Integrations"
+        description={
+          <>
+            Musicathon partner APIs power PulseForge end-to-end. Configure keys in{" "}
+            <code className="font-semibold text-foreground">backend/.env</code> (see{" "}
+            <code className="font-semibold text-foreground">backend/.env.example</code>). Optional:{" "}
+            <code className="font-semibold text-foreground">TREND_FEED_URL</code> for live trend
+            keywords, <code className="font-semibold text-foreground">MXM_KEY</code> as alias for
+            Musixmatch.
+          </>
+        }
+      />
 
-      {error && <p className="mt-4 text-sm text-warning">{error}</p>}
+      {error && <p className="mt-4 text-sm text-foreground">{error}</p>}
 
       {caps && (
         <>
-          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface-elevated px-4 py-3">
-            <Plug className="h-4 w-4 text-accent-light" />
+          <div className="mt-8 flex flex-wrap items-center gap-3 border-2 border-foreground bg-surface px-4 py-3">
+            <Plug className="h-4 w-4 text-foreground" />
             <span className="text-sm">
               <span className="font-semibold">{activeCount}/7</span> partners configured · tier{" "}
               <span className="font-semibold capitalize">{caps.tier}</span>
@@ -125,63 +129,68 @@ export function IntegrationsPage() {
             </span>
           </div>
 
-          <div className="mt-8 grid gap-3">
-            {PARTNER_ROWS.map(({ key, name, Logo, tabs, unlocks }) => {
-              const on = caps.partners[key];
-              return (
-                <div
-                  key={key}
-                  className="flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated p-4"
-                >
-                  <Logo size={32} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{name}</p>
-                      <span className="text-[10px] text-muted">{tabs}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted">{unlocks}</p>
-                  </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                      on ? "bg-success/10 text-success" : "bg-surface text-muted"
-                    }`}
+          <div className="mt-10">
+            <SectionHead title="Partners" eyebrow="Connected stack" />
+            <div className="grid gap-3">
+              {PARTNER_ROWS.map(({ key, name, Logo, tabs, unlocks }) => {
+                const on = caps.partners[key];
+                return (
+                  <div
+                    key={key}
+                    className="flex items-start gap-3 border-2 border-foreground bg-surface p-4 transition hover:-translate-y-0.5"
                   >
-                    {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                    {on ? "Active" : "Missing key"}
-                  </span>
-                </div>
-              );
-            })}
+                    <Logo size={32} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{name}</p>
+                        <span className="text-[10px] text-muted">{tabs}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted">{unlocks}</p>
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1 border-2 border-foreground px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                        on ? "bg-foreground text-background" : "bg-surface text-muted"
+                      }`}
+                    >
+                      {on ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                      {on ? "Active" : "Missing key"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-border bg-surface-elevated p-5">
-            <h2 className="font-semibold">Studio features</h2>
-            <ul className="mt-3 grid gap-2 text-sm text-muted sm:grid-cols-2">
-              {Object.entries(caps.features).map(([key, enabled]) => (
-                <li key={key} className="flex items-center gap-2">
-                  {enabled ? (
-                    <Check className="h-3.5 w-3.5 text-success" />
-                  ) : (
-                    <X className="h-3.5 w-3.5 text-muted" />
-                  )}
-                  <span className={enabled ? "text-foreground" : ""}>
-                    {FEATURE_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim()}
-                  </span>
-                </li>
-              ))}
-            </ul>
+          <div className="mt-10">
+            <SectionHead title="Studio features" eyebrow="What's unlocked" />
+            <Panel>
+              <ul className="grid gap-2 text-sm text-muted sm:grid-cols-2">
+                {Object.entries(caps.features).map(([key, enabled]) => (
+                  <li key={key} className="flex items-center gap-2">
+                    {enabled ? (
+                      <Check className="h-3.5 w-3.5 text-foreground" />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-muted" />
+                    )}
+                    <span className={enabled ? "font-semibold text-foreground" : ""}>
+                      {FEATURE_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").trim()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
           </div>
 
           <p className="mt-6 text-xs text-muted">
-            <Link href="/partners" className="text-accent-light hover:text-foreground">
+            <Link href="/partners" className="font-semibold text-foreground underline-offset-4 hover:underline">
               Partners overview
             </Link>
             {" · "}
-            <Link href="/analyze" className="text-accent-light hover:text-foreground">
+            <Link href="/analyze" className="font-semibold text-foreground underline-offset-4 hover:underline">
               Quick Analyze
             </Link>
             {" · "}
-            <Link href="/studio" className="text-accent-light hover:text-foreground">
+            <Link href="/studio" className="font-semibold text-foreground underline-offset-4 hover:underline">
               Studio
             </Link>
           </p>

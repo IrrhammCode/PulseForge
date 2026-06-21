@@ -17,6 +17,7 @@ import { ExportReport } from "@/components/analysis/ExportReport";
 import { StatsStrip } from "@/components/analysis/StatsStrip";
 import { AnalysisProgress } from "@/components/ui/Skeleton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PageHeader, SectionHead } from "@/components/ui/editorial";
 import { DEFAULT_WHAT_IF } from "@/lib/constants";
 import { analyzeTrack, ApiError, fetchCatalogTrack } from "@/lib/api-client";
 import type { AppTrack } from "@/lib/musixmatch/client";
@@ -171,17 +172,15 @@ export default function AnalyzePage() {
     <div className="relative z-10 space-y-8">
       <IntelligenceBanner className="mb-6 lg:hidden" />
 
-      <section>
-        <div className="mb-6 animate-fade-in">
-          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Analyze before you <span className="text-accent">release</span>
-          </h2>
-          <p className="mt-2 max-w-xl text-sm text-muted md:text-base">
-            Search your track via Musixmatch, get hit potential scoring, simulate 1M listener
-            growth, and unlock a marketing playbook.
-          </p>
-          <p className="mt-1 text-xs text-muted">12,480 tracks analyzed this week • Trusted by indie artists for Musicathon 2026</p>
-        </div>
+      <PageHeader
+        badge="Quick Analyze"
+        title="Quick Analyze"
+        description="Score a released track: search via Musixmatch, get hit potential scoring, simulate 1M listener growth, and unlock a marketing playbook."
+      />
+
+      <section className="space-y-4">
+        <SectionHead title="Search a track" eyebrow="Musixmatch" />
+        <p className="text-xs text-muted">12,480 tracks analyzed this week • Trusted by indie artists for Musicathon 2026</p>
         <TrackSearch
           onSelect={handleSelectTrack}
           selectedTrack={selectedTrack}
@@ -190,10 +189,10 @@ export default function AnalyzePage() {
       </section>
 
       {error && (
-        <div className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger/5 p-4 animate-fade-in">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+        <div className="flex items-start gap-3 border-2 border-foreground bg-surface p-4 animate-fade-in">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
           <div>
-            <p className="text-sm text-danger">{error}</p>
+            <p className="text-sm font-semibold text-foreground">{error}</p>
             {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
           </div>
         </div>
@@ -212,18 +211,18 @@ export default function AnalyzePage() {
       {analysis && !isAnalyzing && (
         <div ref={dashboardRef} className="scroll-mt-24 space-y-8 animate-stagger">
           {/* Hasil Analisis - Quick Preview (High Priority) - strengthened with bars and more value */}
-          <div className="rounded-2xl border-2 border-accent/50 bg-gradient-to-br from-accent/10 to-transparent p-6 shadow-sm">
+          <div className="border-2 border-foreground bg-surface p-6">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">Hasil Analisis</h3>
                 <p className="text-xs text-muted">Mini preview • full details below</p>
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-accent-light">Live from Musixmatch</div>
+              <div className="landing-eyebrow">Live from Musixmatch</div>
             </div>
 
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-[0.15em] text-accent-light font-semibold">Quick Preview</p>
+                <p className="landing-eyebrow">Quick Preview</p>
                 <div className="mt-1 flex items-baseline gap-3">
                   <span className="text-5xl font-bold tabular-nums">{analysis.hitPotential.overall}</span>
                   <span className="text-xl text-muted">Hit Potential</span>
@@ -231,32 +230,32 @@ export default function AnalyzePage() {
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-28">Hook Strength</span>
-                    <div className="flex-1 h-2 bg-border rounded">
-                      <div className="h-2 bg-accent rounded" style={{width: `${analysis.lyrics.hookStrength}%`}}></div>
+                    <div className="flex-1 h-2 border-2 border-foreground bg-surface">
+                      <div className="h-full bg-foreground" style={{width: `${analysis.lyrics.hookStrength}%`}}></div>
                     </div>
-                    <span className="font-medium w-8 text-right text-accent-light">{analysis.lyrics.hookStrength}</span>
+                    <span className="font-medium w-8 text-right text-foreground">{analysis.lyrics.hookStrength}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-28">Energy</span>
-                    <div className="flex-1 h-2 bg-border rounded">
-                      <div className="h-2 bg-accent rounded" style={{width: `${Math.round(analysis.energy.energy * 100)}%`}}></div>
+                    <div className="flex-1 h-2 border-2 border-foreground bg-surface">
+                      <div className="h-full bg-foreground" style={{width: `${Math.round(analysis.energy.energy * 100)}%`}}></div>
                     </div>
-                    <span className="font-medium w-8 text-right text-accent-light">{Math.round(analysis.energy.energy * 100)}%</span>
+                    <span className="font-medium w-8 text-right text-foreground">{Math.round(analysis.energy.energy * 100)}%</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="w-28">Danceability</span>
-                    <div className="flex-1 h-2 bg-border rounded">
-                      <div className="h-2 bg-accent rounded" style={{width: `${Math.round(analysis.energy.danceability * 100)}%`}}></div>
+                    <div className="flex-1 h-2 border-2 border-foreground bg-surface">
+                      <div className="h-full bg-foreground" style={{width: `${Math.round(analysis.energy.danceability * 100)}%`}}></div>
                     </div>
-                    <span className="font-medium w-8 text-right text-accent-light">{Math.round(analysis.energy.danceability * 100)}%</span>
+                    <span className="font-medium w-8 text-right text-foreground">{Math.round(analysis.energy.danceability * 100)}%</span>
                   </div>
                   {analysis.simulation.probabilityToReach && (
                     <div className="flex items-center gap-2 text-sm">
                       <span className="w-28">1M Chance</span>
-                      <div className="flex-1 h-2 bg-border rounded">
-                        <div className="h-2 bg-accent rounded" style={{width: `${analysis.simulation.probabilityToReach}%`}}></div>
+                      <div className="flex-1 h-2 border-2 border-foreground bg-surface">
+                        <div className="h-full bg-foreground" style={{width: `${analysis.simulation.probabilityToReach}%`}}></div>
                       </div>
-                      <span className="font-medium w-8 text-right text-accent-light">{analysis.simulation.probabilityToReach}%</span>
+                      <span className="font-medium w-8 text-right text-foreground">{analysis.simulation.probabilityToReach}%</span>
                     </div>
                   )}
                 </div>
@@ -268,7 +267,7 @@ export default function AnalyzePage() {
                 )}
                 <Link
                   href={`/viral?demo=true&from=qa&title=${encodeURIComponent(analysis.track.title)}&artist=${encodeURIComponent(analysis.track.artist)}`}
-                  className="inline-flex items-center justify-center rounded-xl border border-accent/40 bg-accent-muted px-4 py-2 text-sm font-semibold text-accent-light transition hover:bg-accent-muted/80"
+                  className="inline-flex items-center justify-center border-2 border-foreground bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-foreground hover:text-background"
                 >
                   Run Full Viral Simulation on This Track →
                 </Link>
@@ -295,7 +294,7 @@ export default function AnalyzePage() {
               {anchorAnalysis &&
                 selectedTrack &&
                 anchorAnalysis.track.id !== analysis.track.id && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent-muted px-4 py-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-2 border-foreground bg-surface px-4 py-3 text-sm">
                     <span className="text-muted">
                       Comparing to anchor{" "}
                       <span className="font-medium text-foreground">
@@ -303,7 +302,7 @@ export default function AnalyzePage() {
                       </span>
                       {anchorAnalysis.lyrics.hookStrength != null &&
                         analysis.lyrics.hookStrength != null && (
-                          <span className="ml-2 tabular-nums text-accent-light">
+                          <span className="ml-2 tabular-nums font-medium text-foreground">
                             Δ hook{" "}
                             {analysis.lyrics.hookStrength - anchorAnalysis.lyrics.hookStrength >= 0
                               ? "+"
@@ -314,7 +313,7 @@ export default function AnalyzePage() {
                     </span>
                     <button
                       type="button"
-                      className="text-xs font-medium text-accent-light hover:text-foreground"
+                      className="text-xs font-medium text-muted hover:text-foreground"
                       onClick={() => {
                         if (!anchorAnalysis) return;
                         const track = {

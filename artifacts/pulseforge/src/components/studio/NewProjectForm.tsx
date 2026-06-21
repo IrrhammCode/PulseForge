@@ -64,7 +64,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
   // Choice screen
   if (creationMode === "choice") {
     return (
-      <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+      <div className="border-2 border-foreground bg-surface p-5 md:p-6">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold">New studio project</h2>
@@ -77,10 +77,10 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
           <button
             type="button"
             onClick={() => setCreationMode("prompt")}
-            className="flex flex-col items-start gap-1.5 rounded-xl border border-accent/40 bg-accent-muted/10 p-4 text-left transition hover:border-accent hover:bg-accent-muted/20"
+            className="flex flex-col items-start gap-1.5 border-2 border-foreground bg-surface p-4 text-left transition hover:bg-foreground hover:text-background"
           >
             <div className="flex items-center gap-2 font-semibold text-sm">
-              <Sparkles className="h-4 w-4 text-accent-light" /> Create with AI Prompt
+              <Sparkles className="h-4 w-4" /> Create with AI Prompt
             </div>
             <div className="text-xs text-muted">
               Describe your song idea. AI generates full lyrics, brief, and arrangement.
@@ -90,7 +90,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
           <button
             type="button"
             onClick={() => setCreationMode("template")}
-            className="flex flex-col items-start gap-1.5 rounded-xl border border-border bg-surface p-4 text-left transition hover:border-accent hover:bg-accent-muted/10"
+            className="flex flex-col items-start gap-1.5 border-2 border-foreground bg-surface p-4 text-left transition hover:bg-foreground hover:text-background"
           >
             <div className="flex items-center gap-2 font-semibold text-sm">
               Browse Templates
@@ -113,7 +113,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
   // Prompt mode
   if (creationMode === "prompt") {
     return (
-      <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+      <div className="border-2 border-foreground bg-surface p-5 md:p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">Generate with AI</h2>
@@ -131,7 +131,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
 
         {isGeneratingFromPrompt ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-accent mb-4" />
+            <Loader2 className="h-10 w-10 animate-spin text-foreground mb-4" />
             <p className="text-lg font-medium">Generating project with Groq AI...</p>
             <p className="text-sm text-muted mt-2 max-w-xs">
               AI (Groq) is analyzing the "nuansa" in your prompt and generating a full project:<br />
@@ -144,7 +144,7 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
           // Review the AI filled content before creating
           <div>
             <h3 className="font-semibold mb-2">AI Generated Preview (full AI filled)</h3>
-            <div className="mb-4 space-y-2 text-sm bg-surface p-3 rounded border border-border">
+            <div className="mb-4 space-y-2 text-sm bg-surface p-3 border-2 border-foreground">
               <div><strong>Title:</strong> {aiGenerated.title}</div>
               <div><strong>Artist:</strong> {aiGenerated.artistName}</div>
               <div><strong>Genre/Mood:</strong> {(aiGenerated.genreTags || []).join(", ")} × {(aiGenerated.moodTags || []).join(", ")}</div>
@@ -154,13 +154,13 @@ export function NewProjectForm({ onCreate }: NewProjectFormProps) {
 
             <div className="mb-3">
               <div className="text-xs font-medium uppercase text-muted mb-1">Lyrics (filled by AI — must match your nuansa!)</div>
-              <pre className="text-xs bg-background p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap">{composeLyricsBody(aiGenerated.lyrics) || "(empty)"}</pre>
+              <pre className="text-xs bg-background p-2 border-2 border-foreground overflow-auto max-h-40 whitespace-pre-wrap">{composeLyricsBody(aiGenerated.lyrics) || "(empty)"}</pre>
               <div className="text-[10px] text-muted mt-1">If this looks wrong (e.g. New York lyrics for a bayou prompt), click Regenerate.</div>
             </div>
 
             <div className="mb-3">
               <div className="text-xs font-medium uppercase text-muted mb-1">Creative Brief (filled)</div>
-              <div className="text-xs bg-background p-2 rounded">{aiGenerated.creativeBrief?.story || '...'}</div>
+              <div className="text-xs bg-background p-2 border-2 border-foreground">{aiGenerated.creativeBrief?.story || '...'}</div>
             </div>
 
             <div className="flex gap-3 mt-4">
@@ -198,10 +198,10 @@ Create → open in Write (lyrics pre-filled, edit if needed) → use Analyze for
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               placeholder="e.g. A melancholic 80s synth pop song about a long distance phone call at night, lonely but hopeful"
-              className="w-full min-h-[100px] rounded-xl border border-border bg-surface p-3 text-sm outline-none focus:border-accent/40"
+              className="w-full min-h-[100px] border-2 border-foreground bg-surface p-3 text-sm outline-none focus:bg-foreground/5"
             />
 
-            {promptError && <p className="mt-2 text-sm text-warning">{promptError}</p>}
+            {promptError && <p className="mt-2 text-sm text-foreground">{promptError}</p>}
 
             <div className="mt-4 flex gap-3">
               <button
@@ -238,7 +238,7 @@ Create → open in Write (lyrics pre-filled, edit if needed) → use Analyze for
 
   // Template mode - show ALL templates
   return (
-    <div className="rounded-2xl border border-border bg-surface-elevated p-5 md:p-6">
+    <div className="border-2 border-foreground bg-surface p-5 md:p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold">Choose a Template</h2>
@@ -254,10 +254,10 @@ Create → open in Write (lyrics pre-filled, edit if needed) → use Analyze for
             type="button"
             onClick={() => createFromExample(preset.id)}
             title={preset.description}
-            className="text-left rounded-xl border border-accent/30 bg-accent-muted/10 p-4 hover:border-accent hover:bg-accent-muted/20 transition"
+            className="text-left border-2 border-foreground bg-surface p-4 transition hover:bg-foreground hover:text-background"
           >
             <div className="font-semibold flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent-light" /> {preset.label}
+              <Sparkles className="h-4 w-4" /> {preset.label}
             </div>
             <div className="mt-1 text-sm text-muted line-clamp-2">{preset.description}</div>
           </button>
