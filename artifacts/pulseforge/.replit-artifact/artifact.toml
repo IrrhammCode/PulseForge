@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "PulseForge"
+version = "1.0.0"
+id = "artifacts/pulseforge"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24152
+
+[services.development]
+run = "pnpm --filter @workspace/pulseforge run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pulseforge", "run", "build" ]
+publicDir = "artifacts/pulseforge/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24152"
+BASE_PATH = "/"

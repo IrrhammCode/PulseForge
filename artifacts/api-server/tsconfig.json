@@ -1,19 +1,17 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
-    "outDir": "dist",
-    "rootDir": "src",
-    "types": ["node"]
-  },
-  "include": ["src"],
-  "references": [
-    {
-      "path": "../../lib/db"
-    },
-    {
-      "path": "../../lib/api-zod"
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "types": ["node"],
+    "paths": {
+      "@/*": ["../../lib/shared/src/*"],
+      "@pulseforge/shared/*": ["../../lib/shared/src/*"]
     }
-  ]
+  },
+  "include": ["src", "../../lib/shared/src"],
+  "exclude": ["node_modules", "dist"]
 }

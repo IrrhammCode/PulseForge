@@ -1,0 +1,1 @@
+export * from "@pulseforge/shared/lib/studio/lyrics";

@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("PULSEFORGE_DATABASE_URL")
+}
+
+model SyncSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  label     String?
+  email     String?
+  createdAt DateTime  @default(now())
+  lastUsed  DateTime  @default(now())
+  projects  Project[]
+}
+
+model Project {
+  id              String   @id
+  title           String
+  artistName      String
+  genre           String
+  mood            String
+  status          String
+  activeVersionId String
+  payload         String
+  createdAt       DateTime
+  updatedAt       DateTime
+  syncedAt        DateTime @default(now())
+  ownerSessionId  String?
+
+  ownerSession SyncSession? @relation(fields: [ownerSessionId], references: [id], onDelete: Cascade)
+  audioBlobs   AudioBlob[]
+
+  @@index([ownerSessionId])
+}
+
+model AudioBlob {
+  id        String   @id @default(cuid())
+  projectId String
+  versionId String
+  kind      String
+  mimeType  String
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, versionId, kind])
+  @@index([projectId])
+}

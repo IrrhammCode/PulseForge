@@ -1,0 +1,1 @@
+- [Vercel/Next → Vite port gotchas](vercel-vite-port.md) — process.env crashes browser (fix: vite define), verify named exports via tsc, hooks-after-early-return only fail at runtime.

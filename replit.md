@@ -1,44 +1,45 @@
-# [Project name]
+# PulseForge
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+PulseForge is a local-first "music studio OS" — write lyrics, craft a track, analyze hit potential, run a Viral Lab (1M-listener simulation + gap analysis), and plan a launch, all in one place. Ported from a Vercel/v0 Next.js app into the Replit pnpm_workspace stack (Vite + React).
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/pulseforge run dev` — run the web app (Vite, port via `PORT`)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (Express + Prisma)
+- `pnpm --filter @workspace/pulseforge run typecheck` — typecheck the web app
+- Required env (api-server `.env`): `PULSEFORGE_DATABASE_URL` — SQLite file URL (e.g. `file:./data/pulseforge.db`)
+- Optional partner keys (server-side, enable real AI/partner features): `MUSIXMATCH_API_KEY`, `ELEVENLABS_API_KEY`, `LALAL_API_KEY`, `JAMBASE_API_KEY`, `CYANITE_ACCESS_TOKEN`, `SONGSTATS_API_KEY`, `N8N_WEBHOOK_URL`, `GROQ_API_KEY`
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: Vite + React + wouter (routing) + Tailwind, artifact `@workspace/pulseforge`
+- API: Express + Prisma (SQLite), artifact `@workspace/api-server`
+- Shared logic: `@pulseforge/shared` (`lib/shared`) — Musixmatch/partner clients, studio + viral domain logic
+- Build: Vite (frontend), tsx (backend dev)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/pulseforge/src/App.tsx` — wouter route table (mirrors the old Next.js paths)
+- `artifacts/pulseforge/src/lib/navigation-compat.ts` — drop-in `next/navigation` replacements backed by wouter
+- `artifacts/pulseforge/src/lib/api-client.ts` — all frontend → backend `fetch` calls
+- `artifacts/api-server/src/routes/api.ts` — Express API routes (mounted at `/api`)
+- `lib/shared/src/types/studio.ts` — `LyricsSections`, `EMPTY_LYRICS` and core studio types
+- `.migration-backup/` — original imported Next.js source (reference only)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Local-first**: studio projects live in the browser's localStorage/IndexedDB, not the server DB. The backend only proxies partner APIs (Musixmatch, ElevenLabs, etc.).
+- **Onboarding guard**: `/` and all app routes redirect to `/welcome` until `isOnboardedClient()` is true (replaces the old Next.js middleware gating).
+- **`process.env` shim**: `vite.config.ts` sets `define: { "process.env": {} }` so shared server code that reads `process.env` doesn't crash in the browser (the browser has no secrets; it calls the backend instead).
+- **AI/partner features degrade gracefully**: where the imported snapshot lacked backend routes (AI project generation, lyric translation, vocal sync, catalog similar, video sync), the api-client calls endpoints that may not exist yet and fall back to friendly error messages rather than crashing.
+- **DB env var**: Prisma uses `PULSEFORGE_DATABASE_URL` (not `DATABASE_URL`) so the platform's Postgres `DATABASE_URL` doesn't override the app's SQLite database.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- This is a multi-artifact pnpm_workspace — there is **no** root-level `pnpm dev`/`pnpm build`. Run apps via their workflows/filters.
+- Type-only TS errors don't break the Vite runtime (esbuild strips types). Runtime breakers are missing modules/exports, file-name casing mismatches, `next/*` imports, and bare `process` references.
+- See `.agents/memory/vercel-vite-port.md` for the Next→Vite porting traps.
 
 ## Pointers
 
