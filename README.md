@@ -165,149 +165,208 @@ PulseForge unifies creative work and partner intelligence:
 
 Official base URL: `https://api.musixmatch.com/ws/1.1` — implemented in [`lib/shared/src/lib/musixmatch/client.ts`][mxm-client-file] (L13).
 
+**Complete inventory:** 8 REST endpoints · **15 production modules** · **4 unit tests** in `lib/shared/src/lib/musixmatch/` · **13 backend routes** · **14 frontend API helpers** · **40+ UI/shared consumers** (listed below — nothing omitted).
+
 ### Layer 1 — HTTP Client & API Endpoints
+
+[`lib/shared/src/lib/musixmatch/client.ts`][mxm-client-file] — every Musixmatch REST call:
 
 | Musixmatch endpoint | Client function | Lines |
 |---------------------|-----------------|-------|
-| `track.search` | `searchTracks()` | [`client.ts`][mxm-client-file] L165–197 |
-| `track.lyrics.get` | `getTrackLyrics()` | [`client.ts`][mxm-client-file] L199–214 |
-| `track.lyrics.analysis.get` | `getLyricsAnalysis()` | [`client.ts`][mxm-client-file] L216–235 |
-| `track.richsync.get` | `getRichsync()` | [`client.ts`][mxm-client-file] L270–291 |
-| `track.lyrics.analysis.search` | `searchSimilarByAnalysis()` | [`client.ts`][mxm-client-file] L296–320 |
-| `track.get` | `getTrackDetails()` | [`client.ts`][mxm-client-file] L322–342 |
-| `track.lyrics.translation.get` | `getLyricsTranslation()` | [`client.ts`][mxm-client-file] L344–369 |
-| `track.stem.separation` | `separateWithMusixmatch()` | [`client.ts`][mxm-client-file] L371–452 |
-| Key detection | `hasMusixmatchKey()` / `getApiKey()` | [`client.ts`][mxm-client-file] L15–23 |
-| HTTP GET wrapper | `mxmFetch()` | [`client.ts`][mxm-client-file] L25–71 |
-| HTTP POST wrapper | `mxmPost()` | [`client.ts`][mxm-client-file] L73–124 |
-| App track mapping | `mapTrackToApp()` | [`client.ts`][mxm-client-file] L237–268 |
-| Search re-ranking | `trackRelevanceScore()` | [`client.ts`][mxm-client-file] L140–163 |
+| `track.search` | `searchTracks()` | L165–197 |
+| `track.lyrics.get` | `getTrackLyrics()` | L199–214 |
+| `track.lyrics.analysis.get` | `getLyricsAnalysis()` | L216–235 |
+| `track.richsync.get` | `getRichsync()` | L270–291 |
+| `track.lyrics.analysis.search` | `searchSimilarByAnalysis()` | L296–320 |
+| `track.get` | `getTrackDetails()` | L322–342 |
+| `track.lyrics.translation.get` | `getLyricsTranslation()` | L344–369 |
+| `track.stem.separation` | `separateWithMusixmatch()` | L371–452 |
+| Key detection | `hasMusixmatchKey()` | L21–23 |
+| HTTP GET wrapper | `mxmFetch()` | L25–71 |
+| HTTP POST wrapper | `mxmPost()` | L73–124 |
+| App track mapping | `mapTrackToApp()` | L237–268 |
+| Search re-ranking | `trackRelevanceScore()` | L140–163 |
+| Types re-exported | `AppTrack`, `AnalysisSearchResult`, `MxmTranslationRaw` | L291–364 |
 
-Env vars: `MUSIXMATCH_API_KEY` or `MXM_KEY` ([`client.ts`][mxm-client-file] L17).
+Env vars: `MUSIXMATCH_API_KEY` or `MXM_KEY` (L17). Demo fallback catalog uses `AppTrack` shape from [`mock-catalog.ts`][mock-catalog-file].
 
-### Layer 2 — Shared Musixmatch Modules (all files)
+### Layer 2 — Shared Musixmatch Modules (all 15 files, every export)
 
-| Module | Purpose | Key exports | File |
-|--------|---------|-------------|------|
-| `client.ts` | REST client | All API calls above | [`lib/musixmatch/client.ts`][mxm-client-file] |
-| `types.ts` | MXM response types | `MxmAnalysisRaw`, `MxmLyricsRaw`, … | [`lib/musixmatch/types.ts`][mxm-types-file] |
-| `richsync-parser.ts` | Word-level sync parse | `parseRichsyncBody()` L35 · `hookLatencyAdjustment()` L127 | [`lib/musixmatch/richsync-parser.ts`][mxm-richsync-parser-file] |
-| `subtitle-parser.ts` | LRC subtitle parse | `parseLrcSubtitle()` L11 | [`lib/musixmatch/subtitle-parser.ts`][mxm-subtitle-parser-file] |
-| `catalog-intelligence.ts` | Similar-track benchmark | `fetchCatalogBenchmark()` L97 · `buildCatalogBenchmark()` L64 | [`lib/musixmatch/catalog-intelligence.ts`][mxm-catalog-intel-file] |
-| `section-intelligence.ts` | Section moods + rewrite tips | `analyzeSectionSentiments()` L44 · `generateMxmRewriteSuggestions()` L104 | [`lib/musixmatch/section-intelligence.ts`][mxm-section-intel-file] |
-| `studio-intelligence.ts` | Studio draft MXM bundle | `fetchMxmIntelligenceForTrack()` L23 | [`lib/musixmatch/studio-intelligence.ts`][mxm-studio-intel-file] |
-| `project-lyrics-intelligence.ts` | Merge project + MXM analysis | `resolveProjectAnalysis()` L13 | [`lib/musixmatch/project-lyrics-intelligence.ts`][mxm-project-intel-file] |
-| `intelligence-score.ts` | Search result ranking | `mxmIntelligenceScore()` L4 · `sortByMxmIntelligence()` L13 | [`lib/musixmatch/intelligence-score.ts`][mxm-intelligence-score-file] |
-| `translate-lyrics.ts` | Translation helpers | `translateLyricsBody()` L42 | [`lib/musixmatch/translate-lyrics.ts`][mxm-translate-file] |
-| `lyric-video-timing.ts` | Timed lines for video | `buildLyricVideoTimedLines()` L108 | [`lib/musixmatch/lyric-video-timing.ts`][mxm-lyric-video-file] |
-| `mxm-video-sync.ts` | Richsync/LRC video sync | `buildTimedLinesFromRichsync()` L63 · `resolveMxmStrictDisplay()` L174 | [`lib/musixmatch/mxm-video-sync.ts`][mxm-video-sync-file] |
-| `audio-vocal-sync.ts` | Vocal phrase timing | `buildTimedLinesFromVocalPhrases()` L44 | [`lib/musixmatch/audio-vocal-sync.ts`][mxm-audio-sync-file] |
-| `vocal-gap-sync.ts` | Karaoke line alignment | `alignTimedLinesToVocalOnsets()` L46 | [`lib/musixmatch/vocal-gap-sync.ts`][mxm-vocal-gap-file] |
-| `sync-quality.ts` | Project line collection | `collectProjectLinesWithSections()` L14 | [`lib/musixmatch/sync-quality.ts`][mxm-sync-quality-file] |
+| Module | All exports | File |
+|--------|-------------|------|
+| `client.ts` | `hasMusixmatchKey`, `searchTracks`, `getTrackLyrics`, `getLyricsAnalysis`, `mapTrackToApp`, `getRichsync`, `searchSimilarByAnalysis`, `getTrackDetails`, `getLyricsTranslation`, `separateWithMusixmatch`, `AppTrack`, `AnalysisSearchResult`, `MxmTranslationRaw` | [`client.ts`][mxm-client-file] |
+| `types.ts` | `MxmApiHeader`, `MxmGenre`, `MxmTrackRaw`, `MxmLyricsRaw`, `MxmAnalysisMood`, `MxmAnalysisTheme`, `MxmAnalysisRaw`, `MxmRichsyncRaw`, `MxmAnalysisSearchHit`, `MxmAnalysisSearchResponse`, `MxmRichsyncResponse`, `MxmAnalysisSearchQuery`, `MxmSearchResponse`, `MxmLyricsResponse`, `MxmAnalysisResponse` | [`types.ts`][mxm-types-file] |
+| `richsync-parser.ts` | `RichsyncSegment`, `RichsyncSectionInsight`, `RichsyncParseResult`, `parseRichsyncBody()`, `hookLatencyAdjustment()` | [`richsync-parser.ts`][mxm-richsync-parser-file] |
+| `subtitle-parser.ts` | `parseLrcSubtitle()` | [`subtitle-parser.ts`][mxm-subtitle-parser-file] |
+| `catalog-intelligence.ts` | `buildSimilarTracksQuery()`, `mapToSimilarTrackRef()`, `buildCatalogBenchmark()`, `catalogSimulationBoost()`, `fetchCatalogBenchmark()` | [`catalog-intelligence.ts`][mxm-catalog-intel-file] |
+| `section-intelligence.ts` | `analyzeSectionSentiments()`, `mapMxmMoodToStudioMood()`, `mapCatalogGenre()`, `generateMxmRewriteSuggestions()`, `attachSectionInsights()` | [`section-intelligence.ts`][mxm-section-intel-file] |
+| `studio-intelligence.ts` | `EMPTY_CATALOG_BENCHMARK`, `MxmIntelligenceBundle`, `fetchMxmIntelligenceForTrack()` | [`studio-intelligence.ts`][mxm-studio-intel-file] |
+| `project-lyrics-intelligence.ts` | `ResolvedProjectAnalysis`, `resolveProjectAnalysis()` | [`project-lyrics-intelligence.ts`][mxm-project-intel-file] |
+| `intelligence-score.ts` | `mxmIntelligenceScore()`, `sortByMxmIntelligence()`, `mxmIntelligenceLabel()` | [`intelligence-score.ts`][mxm-intelligence-score-file] |
+| `translate-lyrics.ts` | `translationLanguageLabel()`, `languageFullName()`, `translateLyricsBody()` | [`translate-lyrics.ts`][mxm-translate-file] |
+| `lyric-video-timing.ts` | `TimedLyricLine`, `LyricVideoTimingOptions`, `richsyncMatchesProjectLyrics()`, `buildLyricVideoTimedLines()` | [`lyric-video-timing.ts`][mxm-lyric-video-file] |
+| `mxm-video-sync.ts` | `MxmVideoSyncSource`, `MxmVideoSyncResult`, `buildTimedLinesFromRichsync()`, `overlayProjectLyricsOnLrc()`, `buildTimedLinesFromLrc()`, `resolveMxmStrictDisplay()` | [`mxm-video-sync.ts`][mxm-video-sync-file] |
+| `audio-vocal-sync.ts` | `ProjectLine`, `buildTimedLinesFromVocalPhrases()` | [`audio-vocal-sync.ts`][mxm-audio-sync-file] |
+| `vocal-gap-sync.ts` | `VocalActivityProfile`, `DisplayLineState`, `resolveDisplayLineAt()`, `alignTimedLinesToVocalOnsets()` | [`vocal-gap-sync.ts`][mxm-vocal-gap-file] |
+| `sync-quality.ts` | `collectProjectLinesWithSections()` | [`sync-quality.ts`][mxm-sync-quality-file] |
 
-**Unit tests:** [`richsync-parser.test.ts`][mxm-richsync-parser-test-file] · [`catalog-intelligence.test.ts`][mxm-catalog-intel-test-file] · [`section-intelligence.test.ts`][mxm-section-intel-test-file] · [`intelligence-score.test.ts`][mxm-intelligence-score-test-file]
+**Unit tests (all 4):** [`richsync-parser.test.ts`][mxm-richsync-parser-test-file] · [`catalog-intelligence.test.ts`][mxm-catalog-intel-test-file] · [`section-intelligence.test.ts`][mxm-section-intel-test-file] · [`intelligence-score.test.ts`][mxm-intelligence-score-test-file]
 
-### Layer 3 — Backend API Routes (Musixmatch)
+**Related studio test:** [`catalog-import.test.ts`][catalog-import-test-file] — MXM track import + richsync sections.
+
+### Layer 3 — Backend API Routes (all 13 Musixmatch routes)
 
 All routes in [`artifacts/api-server/src/routes/api.ts`][api-routes-file]:
 
-| HTTP | Route | Handler lines | Musixmatch calls |
-|------|-------|---------------|------------------|
-| `GET` | `/api/search` | L75–118 | `searchTracks()` · mock fallback if no key |
+| HTTP | Route | Handler lines | Musixmatch calls / modules |
+|------|-------|---------------|----------------------------|
+| `GET` | `/api/search` | L75–118 | `searchTracks()` · [`mock-catalog.ts`][mock-catalog-file] fallback |
 | `GET` | `/api/catalog/track/:id` | L120–148 | `getTrackDetails()` · `mapTrackToApp()` |
 | `GET` | `/api/catalog/richsync/:id` | L150–173 | `getRichsync()` · `parseRichsyncBody()` |
 | `GET` | `/api/catalog/lyrics/:id` | L175–195 | `getTrackLyrics()` |
 | `GET` | `/api/catalog/analysis/:id` | L197–213 | `getLyricsAnalysis()` |
 | `GET` | `/api/catalog/translation` | L215–238 | `getLyricsTranslation()` |
 | `POST` | `/api/catalog/similar` | L240–273 | `searchSimilarByAnalysis()` · `fetchCatalogBenchmark()` |
-| `POST` | `/api/analyze` | L275–343 | `fetchCatalogBundle()` → `runAnalysis()` |
-| `POST` | `/api/studio/analyze` | L345–423 | `fetchStudioDraftPartners()` · `runStudioAnalysis()` |
-| `POST` | `/api/studio/lyrics/coach-fix` | L425–463 | `runIntelligentOptimize()` (MXM coach signals) |
+| `POST` | `/api/analyze` | L275–343 | `fetchCatalogBundle()` → `runAnalysis()` · `fetchCatalogBenchmark()` |
+| `POST` | `/api/studio/analyze` | L345–423 | `fetchStudioDraftPartners()` → `fetchMxmIntelligenceForTrack()` |
+| `POST` | `/api/studio/lyrics/coach-fix` | L425–463 | `runIntelligentOptimize()` (MXM coach via `section-intelligence`) |
 | `POST` | `/api/studio/translate-lyrics` | L469–501 | `translateLyricsBody()` |
 | `POST` | `/api/studio/stems/musixmatch` | L767–800 | `separateWithMusixmatch()` |
-| `POST` | `/api/viral/analyze` | L523–548 | `runViralAnalysis()` (MXM-grounded gaps) |
+| `POST` | `/api/viral/analyze` | L523–548 | `runViralAnalysis()` → `mxmAnalysis` + `richsync` from draft partners |
+
+Also: `GET /api/capabilities` ([`capabilities.ts`][capabilities-file]) exposes `partners.musixmatch`, `features.musixmatchStems`, `features.richsyncTimeline`, `features.importFromCatalog`.
 
 Startup partner log: [`artifacts/api-server/src/index.ts`][api-index-file] L14–24.
 
-### Layer 4 — Catalog Bundle Orchestrator
+### Layer 4 — Orchestration & Downstream Pipelines
 
-[`lib/shared/src/lib/partners/adapters.ts`][partner-adapters-file] — single fetch that powers Quick Analyze:
+**Catalog bundle** — [`lib/shared/src/lib/partners/adapters.ts`][partner-adapters-file]:
 
-| Step | Code | Lines |
-|------|------|-------|
-| Partner registry | `partnerAdapters[]` | L36–44 |
-| Enrich track (Spotify ID, ISRC) | `enrichCatalogTrack()` | L46–52 |
-| Parallel MXM + Cyanite + Songstats | `fetchCatalogBundle()` | L54–86 |
-| Lyrics fetch | `getTrackLyrics()` | L63 |
-| Analysis API | `getLyricsAnalysis()` | L64 |
-| Richsync | `getRichsync()` | L65 |
-| Cyanite (via Spotify ID) | `analyzeSpotifyTrack()` | L66–76 |
-| Songstats stats | `getTrackStats()` | L77–80 |
-| Artist momentum | `getArtistMomentum()` | L81 |
-| Velocity history | `getTrackHistoricVelocity()` | L82–85 |
+| Step | Function | Lines | Musixmatch |
+|------|----------|-------|------------|
+| Key gate | `hasMusixmatchKey()` | L18 | Required for live bundle |
+| Parallel fetch | `fetchCatalogBundle()` | L54–86 | `getTrackLyrics`, `getLyricsAnalysis`, `getRichsync`, `parseRichsyncBody` |
+| Track enrich | `enrichCatalogTrack()` | L46–52 | Uses `AppTrack` from MXM |
 
-### Layer 5 — Scoring Engine (Musixmatch-aware)
+**Mock catalog (demo mode)** — [`lib/shared/src/lib/partners/mock-catalog.ts`][mock-catalog-file]: `mockTracksToApp()`, `searchMockTracks()` return `AppTrack[]` when no key.
 
-[`lib/shared/src/lib/scoring/index.ts`][scoring-index-file]:
+**Studio draft partners** — [`lib/shared/src/lib/scoring/studio-draft-partners.ts`][studio-draft-partners-file]: `fetchStudioDraftPartners()` calls `fetchMxmIntelligenceForTrack()`; title/artist match uses `searchTracks()` + `getLyricsAnalysis()` (L155–177).
 
-| Integration point | Lines | Musixmatch usage |
-|-------------------|-------|------------------|
-| Import catalog boost | L15 | `catalogSimulationBoost()` from `catalog-intelligence.ts` |
-| Section insights attach | L16 | `attachSectionInsights()` from `section-intelligence.ts` |
-| Lyrics import | L17–18 | `buildImportLyrics()` · `parseLyricsSections()` |
-| `runAnalysis()` input | L50–60 | `mxmAnalysis`, `richsync`, `catalogBenchmark` fields |
-| Full analysis pipeline | `runAnalysis()` | L62+ |
+**Studio catalog import** — [`lib/shared/src/lib/studio/catalog-import.ts`][catalog-import-file]: `buildCatalogMeta()`, `buildImportLyrics()`, `buildStudioProjectFromTrack()` — maps MXM moods/themes/genre/richsync into studio project.
 
-[`lib/shared/src/lib/scoring/studio-draft-partners.ts`][studio-draft-partners-file] — studio analyze path:
+**Studio lyrics coach** — [`lib/shared/src/lib/studio/lyrics.ts`][studio-lyrics-file]: `generateRewriteSuggestions()` uses `analyzeSectionSentiments()`, `generateMxmRewriteSuggestions()` from `section-intelligence.ts`.
 
-| Function | Lines | Musixmatch |
-|----------|-------|------------|
-| `fetchStudioDraftPartners()` | L95+ | `fetchMxmIntelligenceForTrack()` when `hasMusixmatchKey()` |
-| Catalog match by title/artist | L155–177 | `searchTracks()` + `getLyricsAnalysis()` |
+**Style & arrangement** — [`style-prompt.ts`][style-prompt-file] · [`music-arrangement.ts`][music-arrangement-file] · [`song-concept.ts`][song-concept-file]: `mxmCoach` moods/themes feed descriptors; default `stemEngine: 'musixmatch'`.
 
-[`lib/shared/src/lib/studio/intelligent-optimize.ts`][intelligent-optimize-file] — Optimize & Ship coach:
+**Optimize & Ship** — [`intelligent-optimize.ts`][intelligent-optimize-file]: `buildAutoFixPatches()` / `runIntelligentOptimize()` set `intelligence.musixmatch` from `analysis.meta.mxmCoach`.
 
-| Step | Lines | Musixmatch |
-|------|-------|------------|
-| Partner tier (local → partner → AI) | L459–463 | Uses MXM moods/themes in rewrite prompt |
-| `runIntelligentOptimize()` | L400+ | Musixmatch section intelligence in coach patches |
+**Viral Lab** — [`run-viral-analysis.ts`][run-viral-analysis-file] passes `mxmAnalysis` + `richsync`; [`crowd-grounding.ts`][crowd-grounding-file] uses `catalogSimulationBoost()`; [`gap-analysis.ts`][gap-analysis-file] compares hook vs catalog median; [`audio-signals.ts`][viral-audio-signals-file] prefers richsync hook window.
 
-### Layer 6 — Frontend API Client
+**Domain types** — [`lib/shared/src/types/index.ts`][shared-types-file] (`MxmCoachContext`, `mxmCoach` on analysis meta) · [`lib/shared/src/types/studio.ts`][studio-types-file] (`StemSource: "musixmatch"`, `catalogMeta.mxmTrackId`, `stemEngine`).
 
-[`artifacts/pulseforge/src/lib/api-client.ts`][frontend-api-client-file] — every Musixmatch-backed `fetch`:
+**Version snapshot** — [`version-snapshot.ts`][version-snapshot-file]: gates partner tier on `caps.partners.musixmatch`.
 
-| Function | Lines | Backend route |
-|----------|-------|---------------|
-| `fetchCatalogTrack()` | L7–14 | `/api/catalog/track/:id` |
-| `fetchRichsync()` | L16–27 | `/api/catalog/richsync/:id` |
-| `fetchLyrics()` | L29–35 | `/api/catalog/lyrics/:id` |
-| `fetchLyricsAnalysis()` | L37–43 | `/api/catalog/analysis/:id` |
-| `fetchLyricsTranslation()` | L45–51 | `/api/catalog/translation` |
-| `searchTracks()` | L53–66 | `/api/search` |
-| `analyzeTrack()` | L68–95 | `/api/analyze` |
-| `analyzeStudioVersion()` | L97–124 | `/api/studio/analyze` |
-| `coachFixLyrics()` | L145–165 | `/api/studio/lyrics/coach-fix` |
-| `separateStemsWithMusixmatch()` | L330–345 | `/api/studio/stems/musixmatch` |
-| `fetchCatalogSimilar()` | L475–491 | `/api/catalog/similar` |
-| `translateProjectLyrics()` | L525–543 | `/api/studio/translate-lyrics` |
-| `fetchMxmVideoSync()` | L511–523 | `/api/catalog/video-sync` |
-| `fetchCapabilities()` | L451–457 | `/api/capabilities` |
+### Layer 5 — Scoring Engine (every Musixmatch-aware file)
 
-### Layer 7 — UI Surfaces (Musixmatch)
+| File | Musixmatch usage |
+|------|------------------|
+| [`scoring/index.ts`][scoring-index-file] | Imports `AppTrack`, `MxmAnalysisRaw`, `MxmLyricsRaw`, `RichsyncParseResult`; `catalogSimulationBoost()`, `attachSectionInsights()`; builds `mxmCoach` meta (L106–120); `runAnalysis()` input/output |
+| [`scoring/studio-draft-partners.ts`][studio-draft-partners-file] | `fetchMxmIntelligenceForTrack()`, `hasMusixmatchKey()`, `searchTracks()`, `getLyricsAnalysis()` |
+| [`scoring/studio-analysis.ts`][studio-analysis-file] | `catalogSimulationBoost()`; partner stack labels "Musixmatch Analysis" / "Richsync" |
+| [`scoring/lyrics-analyzer.ts`][lyrics-analyzer-file] | `MxmAnalysisRaw` themes/moods; `RichsyncParseResult` hook/chorus; `richsyncPowered` flag |
+| [`scoring/hit-potential.ts`][hit-potential-file] | `richsyncBoost`, MXM moods/themes in `scoreTrendAlignment()` |
+| [`scoring/lyrics-rhyme.ts`][lyrics-rhyme-file] | `mxmThemes` theme-hit scoring |
+| [`scoring/partners.ts`][scoring-partners-file] | `AppTrack` type for partner context |
+| [`scoring/studio-partners.ts`][studio-partners-file] | `AppTrack` type |
+| [`scoring/recommendations.ts`][recommendations-file] | `AppTrack` type |
+| [`scoring/energy.ts`][energy-file] | `AppTrack` type |
+| [`scoring/audio-signals.ts`][scoring-audio-signals-file] | `AppTrack` type |
 
-| UI | Feature | File · lines |
-|----|---------|--------------|
-| Track search | Musixmatch catalog search + intelligence badges | [`TrackSearch.tsx`][track-search-file] · [`MxmIntelligenceBadges.tsx`][mxm-badges-file] |
-| Quick Analyze | Full catalog analyze flow | [`app/analyze/page.tsx`][analyze-page-file] L32–80 (`analyzeTrack`) |
-| Musixmatch Pro panel | Lyrics · Analysis · Catalog · Translation · Lyric Video tabs | [`MusixmatchProTools.tsx`][mxm-pro-tools-file] L1306–1330 |
-| Match & Enrich | Catalog link + Analysis API pull | [`MusixmatchProTools.tsx`][mxm-pro-tools-file] L200–260 |
-| Section sentiment | MXM-powered rewrite tips | [`SectionSentimentStrip.tsx`][section-sentiment-file] · [`WriteTab.tsx`][write-tab-file] L169–319 |
-| Import from catalog | Quick Analyze → Studio | [`ImportToStudioButton.tsx`][import-to-studio-file] · [`import-from-track.ts`][import-from-track-file] |
-| Produce MXM sync | Richsync timeline sync | [`ProduceTab.tsx`][produce-tab-file] L1107–1112 |
-| Optimize & Ship | Partner coach (MXM in pipeline) | [`OptimizeShipPanel.tsx`][optimize-ship-panel-file] L108–111 |
-| Integrations page | Musixmatch row + live status | [`IntegrationsPage.tsx`][integrations-page-file] L19–26 |
-| Partners landing | Musixmatch pillar | [`PartnersSection.tsx`][partners-section-file] · [`PartnerLogoStrip.tsx`][partner-logo-strip-file] |
-| Capabilities gating | `musixmatch` / `richsyncTimeline` / `musixmatchStems` flags | [`capabilities.ts`][capabilities-file] L70–81 |
+### Layer 6 — Frontend API Client (all 14 helpers)
+
+[`artifacts/pulseforge/src/lib/api-client.ts`][frontend-api-client-file]:
+
+| Function | Lines | Backend route / notes |
+|----------|-------|----------------------|
+| `fetchCatalogTrack()` | L7–14 | `GET /api/catalog/track/:id` |
+| `fetchRichsync()` | L16–27 | `GET /api/catalog/richsync/:id` |
+| `fetchLyrics()` | L29–35 | `GET /api/catalog/lyrics/:id` |
+| `fetchLyricsAnalysis()` | L37–43 | `GET /api/catalog/analysis/:id` |
+| `fetchLyricsTranslation()` | L45–51 | `GET /api/catalog/translation` |
+| `searchTracks()` | L53–66 | `GET /api/search` |
+| `analyzeTrack()` | L68–95 | `POST /api/analyze` |
+| `analyzeStudioVersion()` | L97–124 | `POST /api/studio/analyze` |
+| `coachFixLyrics()` | L145–165 | `POST /api/studio/lyrics/coach-fix` |
+| `fetchCapabilities()` | L451–457 | `GET /api/capabilities` |
+| `separateStemsWithMusixmatch()` | L330–345 | `POST /api/studio/stems/musixmatch` |
+| `fetchCatalogSimilar()` | L475–491 | `POST /api/catalog/similar` |
+| `fetchMxmVideoSync()` | L511–523 | Client stub → `/api/catalog/video-sync` (video sync runs **in-browser** via shared modules in `MusixmatchProTools`) |
+| `translateProjectLyrics()` | L525–543 | `POST /api/studio/translate-lyrics` |
+
+Type imports: `AppTrack` from [`@/lib/musixmatch/client`][mxm-client-file] (re-export shim); `RichsyncParseResult` from shared parser.
+
+### Layer 7 — UI Surfaces (complete list, 40+ files)
+
+**Search & Quick Analyze**
+
+| File | Musixmatch feature |
+|------|-------------------|
+| [`TrackSearch.tsx`][track-search-file] | Catalog search · `sortByMxmIntelligence()` |
+| [`MxmIntelligenceBadges.tsx`][mxm-badges-file] | `mxmIntelligenceLabel()` tier badges |
+| [`app/analyze/page.tsx`][analyze-page-file] | Full analyze · similar tracks · catalog benchmark |
+| [`ImportToStudioButton.tsx`][import-to-studio-file] | Import `AppTrack` → studio |
+| [`import-from-track.ts`][import-from-track-file] | Catalog meta + lyrics import helpers |
+| [`LyricsAnalysis.tsx`][lyrics-analysis-file] | MXM analysis display |
+| [`TrackHero.tsx`][track-hero-file] | Musixmatch attribution |
+| [`SimilarTracksPanel.tsx`][similar-tracks-file] | `analysis.search` similar hits |
+| [`CatalogCompareChips.tsx`][catalog-compare-file] | Re-analyze vs catalog peers |
+| [`PartnerStackSummary.tsx`][partner-stack-file] | Musixmatch / Richsync / Catalog Benchmark chips |
+| [`ListenerSimulation.tsx`][listener-simulation-file] | Catalog median hook from MXM benchmark |
+| [`ExportReport.tsx`][export-report-file] | "Powered by Musixmatch Pro API" |
+| [`EmptyState.tsx`][empty-state-file] | Musixmatch search CTA |
+
+**Studio — Write & Analyze**
+
+| File | Musixmatch feature |
+|------|-------------------|
+| [`WriteTab.tsx`][write-tab-file] | `analyzeSectionSentiments()` |
+| [`SectionSentimentStrip.tsx`][section-sentiment-file] | Per-section MXM mood strip |
+| [`RewriteSuggestions.tsx`][rewrite-suggestions-file] | MXM themes + `mxmCoach` tips |
+| [`StudioAnalyzePanel.tsx`][studio-analyze-panel-file] | `mxmCoach` auto-fix · similar tracks · musixmatch stems |
+| [`AnalyzeTab.tsx`][analyze-tab-file] | `separateStemsWithMusixmatch()` after generate |
+| [`OptimizeShipPanel.tsx`][optimize-ship-panel-file] | Partner coach pipeline (MXM intelligence flag) |
+| [`app/studio/page.tsx`][studio-page-file] | "Import from Musixmatch" entry |
+
+**Studio — Produce & Generate**
+
+| File | Musixmatch feature |
+|------|-------------------|
+| [`MusixmatchProTools.tsx`][mxm-pro-tools-file] | **All 5 Pro tools:** Lyrics · Analysis · Catalog · Translation · Lyric Video; imports **all 8** shared sync modules |
+| [`ProduceTab.tsx`][produce-tab-file] | Richsync timeline re-sync · `MusixmatchProTools` · `mxmCoach` moods |
+| [`GenerateFullSongPanel.tsx`][generate-full-song-file] | Richsync markers · `separateStemsWithMusixmatch()` · `MusixmatchProTools` |
+| [`StemPanel.tsx`][stem-panel-file] | Musixmatch stem option |
+| [`MusicArrangementPanel.tsx`][music-arrangement-panel-file] | `stemEngine: musixmatch` option |
+| [`vocal-activity.ts`][vocal-activity-file] | `VocalActivityProfile` from `vocal-gap-sync` |
+
+**Viral Lab**
+
+| File | Musixmatch feature |
+|------|-------------------|
+| [`ViralLabPage.tsx`][viral-lab-page-file] | Viral analyze (MXM-grounded) |
+| [`ViralProjectPicker.tsx`][viral-project-picker-file] | "Import from Musixmatch" |
+
+**Marketing & Integrations**
+
+| File | Musixmatch feature |
+|------|-------------------|
+| [`IntegrationsPage.tsx`][integrations-page-file] | Live MXM status + unlock list |
+| [`DashboardPage.tsx`][dashboard-page-file] | Analyze demo · partner status chip |
+| [`PartnersSection.tsx`][partners-section-file] · [`PartnerLogoStrip.tsx`][partner-logo-strip-file] · [`HeroSection.tsx`][hero-section-file] · [`HowItWorksSection.tsx`][how-it-works-file] · [`StatsBar.tsx`][stats-bar-file] · [`FeaturesSection.tsx`][features-section-file] · [`CtaSection.tsx`][cta-section-file] · [`PreviewSection.tsx`][preview-section-file] | Landing Musixmatch branding |
+| [`Footer.tsx`][footer-file] | Musicathon 2026 · Musixmatch logo |
+| [`BrandLogos.tsx`][brand-logos-file] | `MusixmatchLogo` component |
+| [`app/partners/page.tsx`][partners-page-file] | Partner stack copy |
+| [`navigation.ts`][navigation-file] | Analyze route: "Musixmatch track intel" |
+| [`Skeleton.tsx`][skeleton-file] | Loading copy for lyrics/richsync/analysis fetch |
 
 ### Layer 8 — Capabilities & Feature Flags
 
@@ -319,8 +378,8 @@ Startup partner log: [`artifacts/api-server/src/index.ts`][api-index-file] L14�
 | `features.quickAnalyze` | L70 | Musixmatch key |
 | `features.quickAnalyzeDemo` | L71 | No key (mock catalog) |
 | `features.importFromCatalog` | L75 | Musixmatch key |
-| `features.richsyncTimeline` | L81 | Musixmatch key |
 | `features.musixmatchStems` | L80 | Musixmatch key |
+| `features.richsyncTimeline` | L81 | Musixmatch key |
 | `tier` full/partner/local | L57–64 | Musixmatch + (Cyanite or Songstats) |
 
 ---
@@ -694,80 +753,124 @@ Add your preferred repository license file if you plan to publish or submit the 
 
 Built for **Musicathon 2026** — Musixmatch at the core, partners at the edges, local-first by default.
 
-[onboarding-file]: artifacts/pulseforge/src/lib/onboarding.ts
-[dashboard-page-file]: artifacts/pulseforge/src/components/dashboard/DashboardPage.tsx
-[dashboard-route-file]: artifacts/pulseforge/src/app/dashboard/page.tsx
-[welcome-page-file]: artifacts/pulseforge/src/app/welcome/page.tsx
-[studio-page-file]: artifacts/pulseforge/src/app/studio/page.tsx
-[analyze-tab-file]: artifacts/pulseforge/src/components/studio/AnalyzeTab.tsx
-[compare-tab-file]: artifacts/pulseforge/src/components/studio/CompareTab.tsx
-[launch-tab-file]: artifacts/pulseforge/src/components/studio/LaunchTab.tsx
-[optimize-ship-page-file]: artifacts/pulseforge/src/components/studio/OptimizeShipPage.tsx
-[viral-route-file]: artifacts/pulseforge/src/app/viral/page.tsx
-[settings-page-file]: artifacts/pulseforge/src/app/settings/page.tsx
-[help-page-file]: artifacts/pulseforge/src/app/help/page.tsx
-[partners-page-file]: artifacts/pulseforge/src/app/partners/page.tsx
-[app-router-file]: artifacts/pulseforge/src/App.tsx
-[studio-types-file]: lib/shared/src/types/studio.ts
-[new-project-form-file]: artifacts/pulseforge/src/components/studio/NewProjectForm.tsx
-[example-presets-file]: lib/shared/src/lib/studio/example-presets.ts
-[write-tab-file]: artifacts/pulseforge/src/components/studio/WriteTab.tsx
-[song-concept-panel-file]: artifacts/pulseforge/src/components/studio/SongConceptPanel.tsx
-[mxm-pro-tools-file]: artifacts/pulseforge/src/components/studio/MusixmatchProTools.tsx
-[produce-tab-file]: artifacts/pulseforge/src/components/studio/ProduceTab.tsx
-[music-timeline-editor-file]: artifacts/pulseforge/src/components/viral/MusicTimelineEditor.tsx
-[stem-panel-file]: artifacts/pulseforge/src/components/studio/StemPanel.tsx
-[analyze-page-file]: artifacts/pulseforge/src/app/analyze/page.tsx
-[optimize-ship-panel-file]: artifacts/pulseforge/src/components/studio/OptimizeShipPanel.tsx
-[viral-lab-page-file]: artifacts/pulseforge/src/components/viral/ViralLabPage.tsx
-[integrations-page-file]: artifacts/pulseforge/src/components/integrations/IntegrationsPage.tsx
-[cloud-routes-file]: artifacts/api-server/src/routes/cloud.ts
-[capabilities-file]: lib/shared/src/lib/partners/capabilities.ts
-[mxm-client-file]: lib/shared/src/lib/musixmatch/client.ts
-[mxm-types-file]: lib/shared/src/lib/musixmatch/types.ts
-[mxm-richsync-parser-file]: lib/shared/src/lib/musixmatch/richsync-parser.ts
-[mxm-subtitle-parser-file]: lib/shared/src/lib/musixmatch/subtitle-parser.ts
-[mxm-catalog-intel-file]: lib/shared/src/lib/musixmatch/catalog-intelligence.ts
-[mxm-section-intel-file]: lib/shared/src/lib/musixmatch/section-intelligence.ts
-[mxm-studio-intel-file]: lib/shared/src/lib/musixmatch/studio-intelligence.ts
-[mxm-project-intel-file]: lib/shared/src/lib/musixmatch/project-lyrics-intelligence.ts
-[mxm-intelligence-score-file]: lib/shared/src/lib/musixmatch/intelligence-score.ts
-[mxm-translate-file]: lib/shared/src/lib/musixmatch/translate-lyrics.ts
-[mxm-lyric-video-file]: lib/shared/src/lib/musixmatch/lyric-video-timing.ts
-[mxm-video-sync-file]: lib/shared/src/lib/musixmatch/mxm-video-sync.ts
-[mxm-audio-sync-file]: lib/shared/src/lib/musixmatch/audio-vocal-sync.ts
-[mxm-vocal-gap-file]: lib/shared/src/lib/musixmatch/vocal-gap-sync.ts
-[mxm-sync-quality-file]: lib/shared/src/lib/musixmatch/sync-quality.ts
-[mxm-richsync-parser-test-file]: lib/shared/src/lib/musixmatch/richsync-parser.test.ts
-[mxm-catalog-intel-test-file]: lib/shared/src/lib/musixmatch/catalog-intelligence.test.ts
-[mxm-section-intel-test-file]: lib/shared/src/lib/musixmatch/section-intelligence.test.ts
-[mxm-intelligence-score-test-file]: lib/shared/src/lib/musixmatch/intelligence-score.test.ts
-[api-routes-file]: artifacts/api-server/src/routes/api.ts
-[api-index-file]: artifacts/api-server/src/index.ts
-[cyanite-client-file]: lib/shared/src/lib/cyanite/client.ts
-[scoring-partners-file]: lib/shared/src/lib/scoring/partners.ts
-[songstats-client-file]: lib/shared/src/lib/songstats/client.ts
-[songstats-momentum-file]: lib/shared/src/lib/songstats/artist-momentum.ts
-[songstats-velocity-file]: lib/shared/src/lib/songstats/historic-velocity.ts
-[songstats-momentum-test-file]: lib/shared/src/lib/songstats/artist-momentum.test.ts
-[songstats-velocity-test-file]: lib/shared/src/lib/songstats/historic-velocity.test.ts
-[elevenlabs-client-file]: lib/shared/src/lib/elevenlabs/client.ts
-[hook-voice-file]: artifacts/pulseforge/src/components/studio/HookVoicePreview.tsx
-[generate-full-song-file]: artifacts/pulseforge/src/components/studio/GenerateFullSongPanel.tsx
-[lalal-client-file]: lib/shared/src/lib/lalal/client.ts
-[jambase-client-file]: lib/shared/src/lib/jambase/client.ts
-[concert-insights-file]: artifacts/pulseforge/src/components/studio/ConcertInsights.tsx
-[n8n-client-file]: lib/shared/src/lib/n8n/client.ts
-[n8n-workflow-file]: artifacts/pulseforge/src/components/studio/N8nWorkflowTrigger.tsx
-[partner-adapters-file]: lib/shared/src/lib/partners/adapters.ts
-[scoring-index-file]: lib/shared/src/lib/scoring/index.ts
-[studio-draft-partners-file]: lib/shared/src/lib/scoring/studio-draft-partners.ts
-[intelligent-optimize-file]: lib/shared/src/lib/studio/intelligent-optimize.ts
-[frontend-api-client-file]: artifacts/pulseforge/src/lib/api-client.ts
-[track-search-file]: artifacts/pulseforge/src/components/search/TrackSearch.tsx
-[mxm-badges-file]: artifacts/pulseforge/src/components/search/MxmIntelligenceBadges.tsx
-[section-sentiment-file]: artifacts/pulseforge/src/components/studio/SectionSentimentStrip.tsx
-[import-to-studio-file]: artifacts/pulseforge/src/components/analyze/ImportToStudioButton.tsx
-[import-from-track-file]: artifacts/pulseforge/src/lib/studio/import-from-track.ts
-[partners-section-file]: artifacts/pulseforge/src/components/landing/PartnersSection.tsx
-[partner-logo-strip-file]: artifacts/pulseforge/src/components/landing/PartnerLogoStrip.tsx
+[onboarding-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/lib/onboarding.ts#L1-L33
+[dashboard-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/dashboard/DashboardPage.tsx#L1-L390
+[dashboard-route-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/dashboard/page.tsx#L1-L5
+[welcome-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/welcome/page.tsx#L1-L38
+[studio-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/studio/page.tsx#L1-L305
+[analyze-tab-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/AnalyzeTab.tsx#L1-L93
+[compare-tab-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/CompareTab.tsx#L1-L14
+[launch-tab-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/LaunchTab.tsx#L1-L276
+[optimize-ship-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/OptimizeShipPage.tsx#L1-L54
+[viral-route-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/viral/page.tsx#L1-L5
+[settings-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/settings/page.tsx#L1-L491
+[help-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/help/page.tsx#L1-L130
+[partners-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/partners/page.tsx#L1-L24
+[app-router-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/App.tsx#L1-L170
+[studio-types-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/types/studio.ts#L1-L301
+[new-project-form-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/NewProjectForm.tsx#L1-L272
+[example-presets-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/example-presets.ts#L1-L761
+[write-tab-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/WriteTab.tsx#L1-L336
+[song-concept-panel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/SongConceptPanel.tsx#L1-L161
+[mxm-pro-tools-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/MusixmatchProTools.tsx#L1-L1736
+[produce-tab-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/ProduceTab.tsx#L1-L1669
+[music-timeline-editor-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/viral/MusicTimelineEditor.tsx#L1-L2724
+[stem-panel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/StemPanel.tsx#L1-L353
+[analyze-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/app/analyze/page.tsx#L1-L414
+[optimize-ship-panel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/OptimizeShipPanel.tsx#L1-L445
+[viral-lab-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/viral/ViralLabPage.tsx#L1-L878
+[integrations-page-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/integrations/IntegrationsPage.tsx#L1-L201
+[cloud-routes-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/api-server/src/routes/cloud.ts#L1-L227
+[capabilities-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/partners/capabilities.ts#L1-L90
+[mxm-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/client.ts#L1-L452
+[mxm-types-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/types.ts#L1-L111
+[mxm-richsync-parser-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/richsync-parser.ts#L1-L132
+[mxm-subtitle-parser-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/subtitle-parser.ts#L1-L57
+[mxm-catalog-intel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/catalog-intelligence.ts#L1-L113
+[mxm-section-intel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/section-intelligence.ts#L1-L199
+[mxm-studio-intel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/studio-intelligence.ts#L1-L52
+[mxm-project-intel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/project-lyrics-intelligence.ts#L1-L29
+[mxm-intelligence-score-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/intelligence-score.ts#L1-L25
+[mxm-translate-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/translate-lyrics.ts#L1-L99
+[mxm-lyric-video-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/lyric-video-timing.ts#L1-L250
+[mxm-video-sync-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/mxm-video-sync.ts#L1-L184
+[mxm-audio-sync-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/audio-vocal-sync.ts#L1-L116
+[mxm-vocal-gap-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/vocal-gap-sync.ts#L1-L51
+[mxm-sync-quality-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/sync-quality.ts#L1-L36
+[mxm-richsync-parser-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/richsync-parser.test.ts#L1-L31
+[mxm-catalog-intel-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/catalog-intelligence.test.ts#L1-L70
+[mxm-section-intel-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/section-intelligence.test.ts#L1-L53
+[mxm-intelligence-score-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/musixmatch/intelligence-score.test.ts#L1-L55
+[api-routes-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/api-server/src/routes/api.ts#L1-L823
+[api-index-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/api-server/src/index.ts#L1-L25
+[cyanite-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/cyanite/client.ts#L1-L210
+[scoring-partners-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/partners.ts#L1-L199
+[songstats-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/songstats/client.ts#L1-L189
+[songstats-momentum-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/songstats/artist-momentum.ts#L1-L326
+[songstats-velocity-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/songstats/historic-velocity.ts#L1-L282
+[songstats-momentum-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/songstats/artist-momentum.test.ts#L1-L45
+[songstats-velocity-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/songstats/historic-velocity.test.ts#L1-L123
+[elevenlabs-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/elevenlabs/client.ts#L1-L349
+[hook-voice-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/HookVoicePreview.tsx#L1-L367
+[generate-full-song-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/GenerateFullSongPanel.tsx#L1-L613
+[lalal-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/lalal/client.ts#L1-L173
+[jambase-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/jambase/client.ts#L1-L128
+[concert-insights-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/ConcertInsights.tsx#L1-L91
+[n8n-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/n8n/client.ts#L1-L51
+[n8n-workflow-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/N8nWorkflowTrigger.tsx#L1-L131
+[partner-adapters-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/partners/adapters.ts#L1-L104
+[scoring-index-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/index.ts#L1-L407
+[studio-draft-partners-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/studio-draft-partners.ts#L1-L215
+[intelligent-optimize-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/intelligent-optimize.ts#L1-L477
+[frontend-api-client-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/lib/api-client.ts#L1-L554
+[track-search-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/search/TrackSearch.tsx#L1-L188
+[mxm-badges-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/search/MxmIntelligenceBadges.tsx#L1-L37
+[section-sentiment-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/SectionSentimentStrip.tsx#L1-L54
+[import-to-studio-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analyze/ImportToStudioButton.tsx#L1-L40
+[import-from-track-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/lib/studio/import-from-track.ts#L1-L65
+[partners-section-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/PartnersSection.tsx#L1-L115
+[partner-logo-strip-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/PartnerLogoStrip.tsx#L1-L42
+[mock-catalog-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/partners/mock-catalog.ts#L1-L33
+[catalog-import-test-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/catalog-import.test.ts#L1-L68
+[catalog-import-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/catalog-import.ts#L1-L121
+[studio-lyrics-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/lyrics.ts#L1-L387
+[style-prompt-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/style-prompt.ts#L1-L216
+[music-arrangement-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/music-arrangement.ts#L1-L302
+[song-concept-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/studio/song-concept.ts#L1-L227
+[run-viral-analysis-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/viral/run-viral-analysis.ts#L1-L198
+[crowd-grounding-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/viral/crowd-grounding.ts#L1-L91
+[gap-analysis-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/viral/gap-analysis.ts#L1-L589
+[viral-audio-signals-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/viral/audio-signals.ts#L1-L196
+[shared-types-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/types/index.ts#L1-L288
+[version-snapshot-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/domain/version-snapshot.ts#L1-L71
+[studio-analysis-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/studio-analysis.ts#L1-L226
+[lyrics-analyzer-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/lyrics-analyzer.ts#L1-L283
+[hit-potential-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/hit-potential.ts#L1-L126
+[lyrics-rhyme-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/lyrics-rhyme.ts#L1-L105
+[studio-partners-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/studio-partners.ts#L1-L86
+[recommendations-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/recommendations.ts#L1-L348
+[energy-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/energy.ts#L1-L69
+[scoring-audio-signals-file]: https://github.com/IrrhammCode/PulseForge/blob/main/lib/shared/src/lib/scoring/audio-signals.ts#L1-L153
+[lyrics-analysis-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/LyricsAnalysis.tsx#L1-L210
+[track-hero-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/TrackHero.tsx#L1-L68
+[similar-tracks-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/SimilarTracksPanel.tsx#L1-L58
+[catalog-compare-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/CatalogCompareChips.tsx#L1-L78
+[partner-stack-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/PartnerStackSummary.tsx#L1-L50
+[listener-simulation-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/ListenerSimulation.tsx#L1-L130
+[export-report-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/ExportReport.tsx#L1-L130
+[empty-state-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/analysis/EmptyState.tsx#L1-L54
+[rewrite-suggestions-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/RewriteSuggestions.tsx#L1-L107
+[studio-analyze-panel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/StudioAnalyzePanel.tsx#L1-L304
+[music-arrangement-panel-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/studio/MusicArrangementPanel.tsx#L1-L326
+[vocal-activity-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/lib/studio/vocal-activity.ts#L1-L153
+[viral-project-picker-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/viral/ViralProjectPicker.tsx#L1-L140
+[hero-section-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/HeroSection.tsx#L1-L142
+[how-it-works-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/HowItWorksSection.tsx#L1-L85
+[stats-bar-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/StatsBar.tsx#L1-L49
+[features-section-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/FeaturesSection.tsx#L1-L130
+[cta-section-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/CtaSection.tsx#L1-L46
+[preview-section-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/landing/PreviewSection.tsx#L1-L136
+[footer-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/layout/Footer.tsx#L1-L76
+[brand-logos-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/icons/BrandLogos.tsx#L1-L195
+[navigation-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/lib/navigation.ts#L1-L120
+[skeleton-file]: https://github.com/IrrhammCode/PulseForge/blob/main/artifacts/pulseforge/src/components/ui/Skeleton.tsx#L1-L52
