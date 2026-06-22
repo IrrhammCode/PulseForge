@@ -9,6 +9,8 @@ const MIN_CHUNK_MS = 3000;
 const MAX_CHUNK_MS = 120_000;
 /** Cap per-plan — keeps ElevenLabs happy while allowing full 3-min songs. */
 export const MAX_PLAN_DURATION_MS = 180_000;
+/** Tighter cap for the compact fallback (used after a full-plan 500). */
+export const MAX_COMPACT_PLAN_DURATION_MS = 120_000;
 
 function clampDuration(ms: number): number {
   return Math.min(MAX_CHUNK_MS, Math.max(MIN_CHUNK_MS, Math.round(ms)));
@@ -68,9 +70,9 @@ export function compactCompositionPlan(plan: CompositionPlan): CompositionPlan {
     return prev.text.trim() !== chunk.text.trim();
   });
 
-  let total = chunks.reduce((s, c) => s + (c.duration_ms ?? 0), 0);
-  if (total > MAX_PLAN_DURATION_MS && total > 0) {
-    const scale = MAX_PLAN_DURATION_MS / total;
+  const total = chunks.reduce((s, c) => s + (c.duration_ms ?? 0), 0);
+  if (total > MAX_COMPACT_PLAN_DURATION_MS && total > 0) {
+    const scale = MAX_COMPACT_PLAN_DURATION_MS / total;
     chunks = chunks.map((c) => ({
       ...c,
       duration_ms: clampDuration((c.duration_ms ?? 20_000) * scale),

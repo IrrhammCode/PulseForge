@@ -27,6 +27,7 @@ const analysis: TrackAnalysis = {
     },
   },
   simulation: {
+    targetPlays: 1_000_000,
     probabilityToReach: 50,
     medianWeeks: 10,
     projectedPeak: 900_000,

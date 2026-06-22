@@ -8,21 +8,38 @@ import type { AppTrack } from "@/lib/musixmatch/client";
 
 const rich: AppTrack = {
   id: "1",
+  commontrackId: "1",
   title: "A",
   artist: "X",
+  album: undefined,
   duration: 200,
+  coverUrl: undefined,
+  isrc: undefined,
+  genre: undefined,
+  releaseYear: undefined,
+  rating: 90,
+  explicit: false,
   hasAnalysis: true,
   hasRichsync: true,
-  rating: 90,
+  spotifyId: undefined,
 };
 
 const basic: AppTrack = {
   id: "2",
+  commontrackId: "2",
   title: "B",
   artist: "Y",
+  album: undefined,
   duration: 200,
+  coverUrl: undefined,
+  isrc: undefined,
+  genre: undefined,
+  releaseYear: undefined,
+  rating: undefined,
+  explicit: false,
   hasAnalysis: false,
   hasRichsync: false,
+  spotifyId: undefined,
 };
 
 describe("mxmIntelligenceScore", () => {

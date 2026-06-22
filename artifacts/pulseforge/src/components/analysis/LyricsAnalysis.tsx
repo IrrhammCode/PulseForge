@@ -1,7 +1,7 @@
 
 import { Card, CardHeader } from "@/components/ui/Card";
 import type { AnalysisMeta, LyricsStructure, TrendFeedSnapshot } from "@/types";
-import { Quote, Repeat, FileText } from "lucide-react";
+import { Quote, Repeat, FileText, Sparkles } from "lucide-react";
 
 const SENTIMENT_COLORS: Record<LyricsStructure["sentiment"], string> = {
   energetic: "text-accent-light bg-accent-muted border-accent/30",
@@ -54,6 +54,56 @@ export function LyricsAnalysis({ data, meta, trendFeed }: LyricsAnalysisProps) {
           </p>
         )}
       </div>
+
+      {meta?.mxmCoach &&
+      (meta.mxmCoach.moods?.length ||
+        meta.mxmCoach.themes?.length ||
+        meta.mxmCoach.audienceRating) ? (
+        <div className="mb-4 rounded-xl border border-accent/30 bg-accent-muted/40 p-4">
+          <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent-light">
+            <Sparkles className="h-3.5 w-3.5" />
+            Musixmatch Analysis API
+          </div>
+          {meta.mxmCoach.moods?.length ? (
+            <div className="mb-3">
+              <p className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">Moods</p>
+              <div className="flex flex-wrap gap-2">
+                {meta.mxmCoach.moods.map((mood) => (
+                  <span
+                    key={mood}
+                    className="rounded-full border border-accent/40 bg-surface-elevated px-2.5 py-1 text-xs font-medium capitalize text-accent-light"
+                  >
+                    {mood}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {meta.mxmCoach.themes?.length ? (
+            <div className="mb-3">
+              <p className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">Themes</p>
+              <div className="flex flex-wrap gap-2">
+                {meta.mxmCoach.themes.map((theme) => (
+                  <span
+                    key={theme}
+                    className="rounded-full border border-border bg-surface-elevated px-2.5 py-1 text-xs capitalize text-foreground"
+                  >
+                    {theme}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {meta.mxmCoach.audienceRating ? (
+            <p className="text-xs text-muted">
+              Audience rating:{" "}
+              <span className="font-medium capitalize text-foreground">
+                {meta.mxmCoach.audienceRating}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

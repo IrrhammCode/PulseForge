@@ -118,6 +118,7 @@ describe("storage-schema", () => {
                   gapCount: 0,
                 },
                 monteCarlo: {
+                  targetPlays: 1_000_000,
                   probabilityToReach: 55,
                   medianWeeks: 10,
                   projectedPeak: 800_000,

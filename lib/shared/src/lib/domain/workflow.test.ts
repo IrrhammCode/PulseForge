@@ -59,6 +59,7 @@ const baseProject: StudioProject = {
           gapCount: 0,
         },
         monteCarlo: {
+          targetPlays: 1_000_000,
           probabilityToReach: 55,
           medianWeeks: 12,
           projectedPeak: 800_000,

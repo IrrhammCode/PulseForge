@@ -76,7 +76,6 @@ async function fetchRemoteTrendFeed(url: string): Promise<Partial<TrendFeedSnaps
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { accept: "application/json" },
-      next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
     const json: unknown = await res.json();

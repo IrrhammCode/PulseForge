@@ -1,7 +1,8 @@
 - [Studio local-first persistence](studio-local-persistence.md) — `command*` writes localStorage but fires no same-tab `storage` event; pass an `onChanged`/refresh callback to update sibling components.
 - [Optimize & Ship +0/+0](optimize-ship-pipeline.md) — baseline must be a fresh analysis, never the cached one, or before==after.
 - [Viral proxy payload bloat](viral-proxy-payload-bloat.md) — large frontend POSTs (allProjects w/ audio) stall through the proxy though backend is fast; slim payloads + abort-timeout.
-- [Missing ported API routes](missing-ported-api-routes.md) — AI/partner feature "produces nothing" usually = frontend calls a route the port never added to api.ts (404); studio/generate added, others still missing.
+- [Missing ported API routes](missing-ported-api-routes.md) — AI/partner feature "produces nothing" usually = frontend calls a route the Next→Vite port never added to api.ts (404); grep api-client path vs api.ts before assuming a frontend bug.
+- [Shared test suite needs vitest config](shared-vitest-config.md) — lib/shared tests use the `@/` alias; without lib/shared/vitest.config.ts wiring it, `vitest run` silently fails to run ANY test (false "all green").
 - [PulseForge studio sync/translation/preview](pulseforge-studio-sync.md) — MXM catalog data is a different track; translate actual project lyrics; guard preview audio with a generation token.
 - [Paid generation rate limit](paid-generation-rate-limit.md) — ElevenLabs music throttled per-IP/24h; reserve-before-generate + rollback; in-memory/per-instance is an intentional local-first tradeoff.
 - [MXM search & viral 1M calibration](mxm-search-and-viral-calibration.md) — use q_track (not q) for title search; scale Monte-Carlo weekly growth so hits aren't pinned at the 5% floor.

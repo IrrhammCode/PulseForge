@@ -8,13 +8,20 @@ import type { AppTrack } from "@/lib/musixmatch/client";
 
 const anchor: AppTrack = {
   id: "1",
+  commontrackId: "1",
   title: "Midnight Drive",
   artist: "Nova Ray",
+  album: undefined,
   duration: 210,
+  coverUrl: undefined,
+  isrc: undefined,
   genre: "Pop",
+  releaseYear: undefined,
   rating: 80,
+  explicit: false,
   hasRichsync: true,
   hasAnalysis: true,
+  spotifyId: undefined,
 };
 
 describe("buildSimilarTracksQuery", () => {

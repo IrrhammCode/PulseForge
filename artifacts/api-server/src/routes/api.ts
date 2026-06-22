@@ -17,8 +17,10 @@ import {
   hasMusixmatchKey,
   mapTrackToApp,
   searchTracks,
+  searchSimilarByAnalysis,
   separateWithMusixmatch,
 } from "@pulseforge/shared/lib/musixmatch/client";
+import type { MxmAnalysisRaw, MxmAnalysisSearchQuery } from "@pulseforge/shared/lib/musixmatch/types";
 import { parseRichsyncBody } from "@pulseforge/shared/lib/musixmatch/richsync-parser";
 import { mockTracksToApp, searchMockTracks } from "@pulseforge/shared/lib/partners/mock-catalog";
 import { fetchCatalogBundle } from "@pulseforge/shared/lib/partners/adapters";
@@ -233,6 +235,43 @@ apiRouter.get("/catalog/translation", async (req, res) => {
   }
 });
 
+// Find catalog tracks with a similar lyrical fingerprint using the
+// Musixmatch "track.lyrics.analysis.search" endpoint (moods/themes/meaning).
+apiRouter.post("/catalog/similar", async (req, res) => {
+  if (!hasMusixmatchKey()) {
+    res.status(503).json({ error: "Musixmatch API key not configured", demoMode: true });
+    return;
+  }
+  try {
+    const body = (req.body ?? {}) as {
+      analysis?: MxmAnalysisRaw | null;
+      genre?: string;
+      title?: string;
+    };
+    const analysis = body.analysis;
+    const moods = analysis?.moods?.main_moods?.slice(0, 3) ?? [];
+    const themes = analysis?.themes?.main_themes?.map((t) => t.theme).slice(0, 3) ?? [];
+    const meaning = analysis?.meaning?.explanation?.slice(0, 200);
+
+    if (!moods.length && !themes.length && !(meaning && meaning.length > 20)) {
+      res.json({ similar: [], source: "none" });
+      return;
+    }
+
+    const query: MxmAnalysisSearchQuery = { lyrics_language: "en" };
+    if (moods.length) query.moods = moods;
+    if (themes.length) query.themes = themes;
+    if (body.genre) query.genre = [body.genre];
+    if (meaning && meaning.length > 20) query.meaning = meaning;
+
+    const hits = await searchSimilarByAnalysis(query, 6);
+    const similar = hits.map((hit) => mapTrackToApp(hit.track));
+    res.json({ similar, source: "musixmatch" });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Catalog similar failed" });
+  }
+});
+
 apiRouter.post("/analyze", async (req, res) => {
   try {
     const body = req.body as {
@@ -418,6 +457,13 @@ apiRouter.post("/studio/lyrics/coach-fix", async (req, res) => {
       error: err instanceof Error ? err.message : "Coach fix failed",
     });
   }
+});
+
+// Server-side forced alignment (ASR) is not configured; the client falls back
+// to in-browser vocal-activity detection. Respond 200 with empty lines so the
+// lyric-video timing fallback chain proceeds without a 404 in the network tab.
+apiRouter.post("/studio/whisper-align", upload.single("audio"), (_req, res) => {
+  res.json({ lines: [], source: "unavailable" });
 });
 
 apiRouter.post("/studio/translate-lyrics", async (req, res) => {

@@ -31,7 +31,6 @@ async function songstatsFetch(
 
   const res = await fetch(url.toString(), {
     headers: { apikey: apiKey, accept: "application/json" },
-    next: { revalidate: 600 },
   });
 
   if (res.status === 404) return null;

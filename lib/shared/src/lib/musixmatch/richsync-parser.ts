@@ -2,6 +2,7 @@ export interface RichsyncSegment {
   text: string;
   startSec: number;
   endSec: number;
+  chars?: Array<{ char: string; offset: number }>;
 }
 
 export interface RichsyncSectionInsight {

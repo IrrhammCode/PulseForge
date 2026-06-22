@@ -39,7 +39,6 @@ async function cyaniteGraphql<T>(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ query, variables }),
-    next: { revalidate: 600 },
   });
 
   if (!res.ok) throw new Error(`Cyanite HTTP ${res.status}`);

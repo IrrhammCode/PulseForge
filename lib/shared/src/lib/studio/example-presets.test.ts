@@ -30,7 +30,7 @@ describe("example-presets", () => {
   it("buildExampleCreateInput embeds preset lyrics for v1", () => {
     const input = buildExampleCreateInput(LATE_SPRING_BALLAD_EXAMPLE);
     expect(input.initialLyrics?.chorus).toContain("Hold this spring");
-    expect(input.lyrics).toBeUndefined();
+    expect((input as { lyrics?: unknown }).lyrics).toBeUndefined();
   });
 
   it("presets have distinct lyrics", () => {

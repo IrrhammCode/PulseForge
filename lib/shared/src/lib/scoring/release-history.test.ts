@@ -42,7 +42,7 @@ function project(
             curve: [],
           },
           analyzedAt,
-        } as StudioProject["versions"][0]["viral"],
+        } as unknown as StudioProject["versions"][0]["viral"],
         createdAt: analyzedAt,
         updatedAt: analyzedAt,
       },

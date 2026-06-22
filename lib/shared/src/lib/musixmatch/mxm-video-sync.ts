@@ -3,7 +3,7 @@ import { LYRICS_SECTION_ORDER, type LyricsSectionKey } from "@/lib/studio/lyrics
 import type { RichsyncParseResult } from "@/lib/musixmatch/richsync-parser";
 import type { TimedLyricLine } from "@/lib/musixmatch/lyric-video-timing";
 import { parseLrcSubtitle } from "@/lib/musixmatch/subtitle-parser";
-import type { ResolvedLyricDisplay } from "@/lib/musixmatch/vocal-gap-sync";
+import type { DisplayLineState } from "@/lib/musixmatch/vocal-gap-sync";
 
 const SECTION_LABELS: Record<LyricsSectionKey, string> = {
   intro: "Intro",
@@ -174,7 +174,7 @@ export function buildTimedLinesFromLrc(
 export function resolveMxmStrictDisplay(
   t: number,
   lines: TimedLyricLine[]
-): ResolvedLyricDisplay & { inGap: boolean } {
+): DisplayLineState & { inGap: boolean } {
   const idx = lines.findIndex((l) => t >= l.start && t <= l.end);
   if (idx >= 0) {
     const line = lines[idx]!;

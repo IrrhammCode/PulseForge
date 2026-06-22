@@ -123,6 +123,7 @@ export interface ListenerSimulation {
   medianWeeks: number;
   projectedPeak: number;
   curve: SimulationPoint[];
+  confidenceBand?: { low: number; high: number };
 }
 
 export interface EnergyProfile {

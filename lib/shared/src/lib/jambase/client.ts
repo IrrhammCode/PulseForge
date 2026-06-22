@@ -87,7 +87,7 @@ export async function searchConcerts(
   url.searchParams.set("perPage", "8");
   url.searchParams.set("page", "1");
 
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  const res = await fetch(url.toString());
   if (!res.ok) {
     return {
       available: false,

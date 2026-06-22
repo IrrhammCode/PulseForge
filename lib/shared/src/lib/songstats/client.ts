@@ -50,7 +50,6 @@ export async function songstatsFetch(
       apikey: apiKey,
       accept: "application/json",
     },
-    next: { revalidate: 300 },
   });
 
   if (res.status === 404) return null;
